@@ -1,82 +1,51 @@
 # Implementation agent handoff
 
-## Tracked implementation work
+## Current contribution
 
-**Tracking issue:** [#2, bounded Rust CEGAR verifier](https://github.com/kmosoti/CEGAR/issues/2). The architecture is in [draft PR #1](https://github.com/kmosoti/CEGAR/pull/1) on `docs/cegar-design-agent-handoff`. Read [CONTRIBUTING.md](../CONTRIBUTING.md) and [knowledge/](../knowledge/README.md) before coding. Prefer local JJ with colocated Git. A subsequent implementation PR should reference `Refs #2` until its acceptance gates are actually complete.
+[Draft PR #3](https://github.com/kmosoti/CEGAR/pull/3), branch `feat/2-bounded-verifier`, contains the first dependency-free Rust finite-state checker for [issue #2](https://github.com/kmosoti/CEGAR/issues/2). It is stacked on `docs/cegar-design-agent-handoff` / draft PR #1. The owner's linked documentation branch is unchanged. A PR body reference is not claimed to establish a new branch Development association.
 
-Record investigation evidence in the issue rather than committing raw artifacts; maintain concise reference notes under `knowledge/evidence/`. Existing sample JSON schemas/fixtures are durable source artifacts and should remain versioned. There are currently no compiled Rust test results or G15 measurements for this implementation.
-
-## Mission
-
-Implement the **first non-neural CEGAR slice** from the architecture and contracts in this repository. Do not begin with d1 integration, an agent UI, a chat harness, or a privileged executor.
-
-The public project is intended to demonstrate rigorous systems engineering: explicit assumptions, small testable components, formal semantics, resource bounds, provenance and reproducible negative results.
+The core now builds and passes Clippy, formatting, debug/release tests and the Python-to-Rust differential check. Read [the exact evidence](../knowledge/evidence/0002-bounded-core-validation.md), [findings](../knowledge/research/0002-finite-checker-findings.md) and [autonomous decisions](../knowledge/decisions/0003-finite-cegar-kernel.md). These are scoped CI results, not G15 measurements or proof of a real host's safety.
 
 ## Read order
 
-1. `README.md` and `AGENTS.md`
-2. `docs/FORMAL_MODEL.md`, especially abstraction soundness and outcome semantics
-3. `docs/CONTRACTS.md` and the synthetic examples
-4. `docs/SECURITY.md` and `docs/EVALUATION.md`
-5. `docs/ROADMAP.md` for staged scope
+1. `AGENTS.md`, `CONTRIBUTING.md`, `README.md`.
+2. `crates/cegar-core/README.md` and source/tests.
+3. `docs/FORMAL_MODEL.md`, `docs/CONTRACTS.md`, `docs/SECURITY.md`.
+4. Knowledge-base evidence and ADR 0003, including failed attempts and limitations.
+5. Issue #2 acceptance criteria and the original phased `docs/ROADMAP.md`.
 
-## Initial code organization (suggestion, not mandated)
+## What is implemented
 
-```text
-crates/
-  cegar-core/       Pure finite transition system, abstraction, trace replay
-  cegar-server/     Axum shell later; do not add to first core PR unless justified
-tests/
-  fixtures/         Synthetic safe, unsafe and malformed systems
-  differential/     Independent exact-reachability oracle
-docs/
-  decisions/        ADRs for changes to trust or solver semantics
+Validated dense-ID finite models; action-labeled quotient reachability; concrete frontier propagation; spurious-trace refinement; concrete witness replay; bounded work/refinement and cooperative cancellation; independent Rust transitive closure and Python process oracle. Tests use synthetic data only. No runtime dependencies are required.
+
+The initial model contract is a Rust API, not the proposed bit-width/explicit-ID JSON schema. The example driver is a test-only bounded whitespace protocol. Do not present it as the authenticated service.
+
+## Next contribution: review before adding machinery
+
+- Independently inspect the abstraction constructor, concrete feasibility logic and strict refinement progress argument.
+- Add direct invariant/property tests for intermediate partitions and targeted mutations; passing differential tests up to three states is not a proof of all larger cases.
+- Evaluate the public JSON schema to internal-ID mapping as a precise, bounded adapter with rejected unknown references and byte/nesting limits.
+- Design the artifact workflow compiler with immutable digests and a separate concrete oracle before implementing trusted collector authority.
+- Preserve explicit incomplete/invalid/inconclusive outcomes. Missing or contradictory real-world observations are not expressible as permissions in this graph core.
+- Keep hard process RAM/wall-clock isolation outside the pure checker. A cancellation callback must remain bounded and cannot replace process isolation.
+
+## Validation commands
+
+Use the committed toolchain and lockfile:
+
+```sh
+cargo fmt --all --check
+cargo clippy --workspace --all-targets --locked --offline -- -D warnings
+cargo test --workspace --locked --offline -- --nocapture
+cargo test --workspace --release --locked --offline -- --nocapture
+cargo build --example oracle_driver --locked --offline
+python3 scripts/differential.py --driver target/debug/examples/oracle_driver
 ```
 
-Use Rust 1.100, edition 2024, and a reviewed Cargo.lock. The repo has no existing compiled source on this branch; **do not invent a passing build or lockfile**. If Rust 1.100 is not available in the environment, state that and use the appropriate available toolchain for preliminary checks, with qualified final build deferred.
+Record exact source/compiler versions and output. Raw sanitized outputs belong in the issue's linked CI artifacts; durable interpretations go in `knowledge/evidence/`. Do not silently rewrite the pin to obtain green without documenting the decision.
 
-## First PR target: pure finite-state checker
+## Subsequent milestones
 
-Inputs: bounded finite states, nonempty initial set, explicit bad-state set, labeled transitions and resource budgets. Outputs: `verified_within_model`, concrete counterexample with replayable states/actions, invalid input or inconclusive with reason.
+Typed artifact workflow and read-only trusted snapshots; bounded authenticated service and receipts; SMT only where an obligation requires it; one qualified optional d1 adapter emitting predictions, not observations. OS and GPU tuning remain deferred. No executor, arbitrary shell, broad model installation or general agent framework belongs in this core contribution.
 
-1. Implement input validation with no panics for hostile JSON/model data.
-2. Implement independent exact reachability as the test oracle.
-3. Implement an overapproximating abstraction, check abstract reachability, test concrete feasibility, and refine only spurious traces.
-4. Prove (in code/tests and documented argument) that abstraction transition coverage preserves concrete behavior.
-5. Bound refinements/work/time/memory and make exhaustion explicitly inconclusive.
-6. Generate deterministic fixtures: safe graph after spurious trace, real unsafe graph, initial bad state, empty initial invalid and low-budget inconclusive.
-7. Run exhaustive or property-driven differential checks over small models; replay every returned unsafe trace against concrete edges.
-8. Document precisely what a positive result means: **the supplied finite model only**.
-
-If a direct exact checker is simpler, use it as the oracle first. Do not add Z3 merely for demonstration value. Do not ask a model to invent trusted preconditions.
-
-## Expected PR evidence
-
-- Exact compiler version and test/format/lint commands with exit codes.
-- Changed-file summary and specification deltas.
-- Tested fixture counts, seeds and known caveats.
-- Bounded worst-case behavior and explicit rejection/error types.
-- Scope statement: no host assurance, no execution authorization.
-- A small ADR if the proposed semantics or authority model change.
-
-## Subsequent PRs (in order)
-
-1. Trusted snapshot / typed artifact contract compiler.
-2. Authenticated read-only verification service with bounded workers and receipts.
-3. One optional d1 adapter as untrusted predictions, with real G15 resource measurements.
-4. Optional context packaging, local planner experiments and guarded workflow repair.
-
-Each phase should preserve or extend tests. Do not combine all phases into one enormous agent-generated PR.
-
-## Questions an implementation must answer
-
-- Can any client field impersonate a trusted observation?
-- Does a bad abstract trace always replay before being reported as concrete?
-- Can a timeout/unknown/memory limit accidentally produce a positive status?
-- Does a receipt name every assumption necessary for its narrow claim?
-- Is the current state actually what the modeled policy assumed?
-- What happens when model or solver workers fail?
-- Is any claimed performance based on a real machine, or just arithmetic?
-
-When unresolved, keep the system conservative and record the missing evidence. A visibly incomplete but sound boundary is better than a persuasive but unsafe one.
-
+Use a narrow issue-linked draft PR with `Refs #2` until reviewed acceptance criteria are actually complete. Do not automatically merge PR #3 or close the issue. Reverting the implementation commits is the rollback; no external infrastructure state has been mutated by the verifier.
