@@ -3,7 +3,9 @@
 //! The reference oracle uses a backwards least fixed point instead.
 #![forbid(unsafe_code)]
 
-use cegar_core::{Limits, MAX_STATES, MAX_TRANSITIONS, Model, Outcome, Transition, Witness, verify};
+use cegar_core::{
+    Limits, MAX_STATES, MAX_TRANSITIONS, Model, Outcome, Transition, Witness, verify,
+};
 
 const SEED: u64 = 0x43_45_47_41_52;
 const SEEDED_CASES: usize = 1_000;
@@ -56,7 +58,11 @@ fn reference_witness_valid(model: &Model, witness: &Witness) -> bool {
     if !model.bad_states().any(|state| state == last) {
         return false;
     }
-    if witness.states.iter().any(|&state| state >= model.state_count()) {
+    if witness
+        .states
+        .iter()
+        .any(|&state| state >= model.state_count())
+    {
         return false;
     }
     witness
@@ -65,9 +71,7 @@ fn reference_witness_valid(model: &Model, witness: &Witness) -> bool {
         .zip(witness.actions.iter())
         .all(|(states, &action)| {
             model.transitions().iter().any(|edge| {
-                edge.source == states[0]
-                    && edge.action == action
-                    && edge.target == states[1]
+                edge.source == states[0] && edge.action == action && edge.target == states[1]
             })
         })
 }
@@ -76,7 +80,9 @@ fn compare(model: &Model, group: &str, index: usize, totals: &mut Totals) -> Res
     let expected = reference_reaches_bad(model);
     let report = verify(model, Limits::default());
     if report.execution_authorized() || report.scope() != "supplied_finite_model_only" {
-        return Err(format!("{group} #{index}: authority/scope invariant violated"));
+        return Err(format!(
+            "{group} #{index}: authority/scope invariant violated"
+        ));
     }
 
     match (expected, report.outcome) {
@@ -97,7 +103,9 @@ fn compare(model: &Model, group: &str, index: usize, totals: &mut Totals) -> Res
 }
 
 fn subset(n: usize, bits: usize) -> Vec<usize> {
-    (0..n).filter(|&state| bits & (1usize << state) != 0).collect()
+    (0..n)
+        .filter(|&state| bits & (1usize << state) != 0)
+        .collect()
 }
 
 fn exhaustive(totals: &mut Totals) -> Result<(), String> {
@@ -152,7 +160,7 @@ fn seeded(totals: &mut Totals) -> Result<(), String> {
         let mut edges = Vec::new();
         for source in 0..n {
             for target in 0..n {
-                if rng.next() % 7 == 0 {
+                if rng.next().is_multiple_of(7) {
                     edges.push(Transition::new(source, (rng.next() % 4) as u32, target));
                 }
             }
@@ -204,11 +212,7 @@ fn run() -> Result<(), String> {
     // A single stable JSON record: suitable for CI artifacts without Python.
     println!(
         "{{\"status\":\"passed\",\"oracle\":\"rust_backward_fixed_point\",\"exhaustive_models\":{},\"seeded_models\":{},\"seed\":{},\"witnesses_replayed\":{},\"invalid_models\":{}}}",
-        totals.exhaustive,
-        totals.seeded,
-        SEED,
-        totals.replayed,
-        totals.rejected
+        totals.exhaustive, totals.seeded, SEED, totals.replayed, totals.rejected
     );
     Ok(())
 }
