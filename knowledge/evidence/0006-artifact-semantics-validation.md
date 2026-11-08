@@ -20,7 +20,13 @@ Debug and release each passed 11 core unit, 19 integration, 2 xtask unit and 1 d
 
 The tested source hashes were: core `bb48586f0b9960ed0853b74bcfbf032ecfa96b34610cbde4ba8ffdf1e8af778c`; core integration tests `6f127fc0b6abd498f17ddf192720f26ab9592dacf18b1088b9e07411284d91d3`; xtask `1d8ac413e253b8c7c7bbb6e790b7e05db7a3604bdab0a9094130f7a2b07a2dad`; workspace manifest `cef147af2876d6157b00e4b6dbc297ea227abcd1e4a992cca1ba9632a1098eee`; lockfile `a97e795b474f61026c5663161908e49b5c5ea24aa6fbe3a0b397e7335c6a33c0`; toolchain pin `1d2d37f7eec5adc61d50344980093595fb4cfa12847c75777d5261de63096e59`.
 
-These are finite graph regression results, not tests of the proposed domain contract or of future provenance. The existing [run 42501958661](https://github.com/kmosoti/CEGAR/actions/runs/42501958661) tested the baseline, not this work-in-progress documentation. New PR CI must be inspected for its exact head and tested merge; do not treat this note as proof of such a run. Raw outputs are not committed. The synthetic domain cases are expected-outcome proposals pending human review and a later independently implemented Rust domain oracle.
+These are finite graph regression results, not tests of the proposed domain contract or of future provenance. Raw outputs are not committed. The synthetic domain cases are expected-outcome proposals pending human review and a later independently implemented Rust domain oracle.
+
+## GitHub Actions provenance
+
+[Run 42512383739](https://github.com/kmosoti/CEGAR/actions/runs/42512383739) passed all five gates for [draft PR #6](https://github.com/kmosoti/CEGAR/pull/6) source head `554001b65a064b569b3e85fdd2cc4ce495a4195d` and synthetic merge `1a3a3bd7d56df6d1eff8a754bb4805d485d4f121`, whose parents are development baseline `3abfcdac81ff65349cea232af10e3aa8f1f0b0cd` and that source head. The artifact's checked-out commit, source hashes, compiler, debug/release test counts and xtask JSON were inspected and matched the local observations. [Sanitized artifact 13629863133](https://github.com/kmosoti/CEGAR/actions/runs/42512383739/artifacts/13629863133) has ZIP SHA-256 `dc328bedfe67f71cd315783291a606f26fa8565ddaf65af67b0175e92646a4f8` and expires 2026-12-08 18:55:34 UTC. The CI regression suite tests the existing graph core, not the proposed artifact-domain cases.
+
+This provenance update is a later documentation-only commit; inspect the latest PR run separately. Earlier [run 42501958661](https://github.com/kmosoti/CEGAR/actions/runs/42501958661) tested the development baseline rather than the design proposal.
 
 ## Falsifiers and limits
 
