@@ -22,7 +22,9 @@ fn spurious_trace_refines_to_safe() {
 fn real_counterexample_replays_with_action_identity() {
     let m = model(3, &[0], &[2], &[Edge::new(0, 17, 1), Edge::new(1, 23, 2)]);
     let r = verify(&m, Limits::default());
-    let Outcome::ConcreteCounterexample(mut w) = r.outcome else { panic!("expected witness") };
+    let Outcome::ConcreteCounterexample(mut w) = r.outcome else {
+        panic!("expected witness")
+    };
     assert_eq!(w.states, [0, 1, 2]);
     assert_eq!(w.actions, [17, 23]);
     assert_eq!(replay(&m, &w), Ok(()));
@@ -34,19 +36,37 @@ fn real_counterexample_replays_with_action_identity() {
 fn initial_bad_state_has_zero_step_witness() {
     let m = model(3, &[0, 2], &[2], &[]);
     let r = verify(&m, Limits::default());
-    assert_eq!(r.outcome, Outcome::ConcreteCounterexample(Witness { states: vec![2], actions: vec![] }));
+    assert_eq!(
+        r.outcome,
+        Outcome::ConcreteCounterexample(Witness {
+            states: vec![2],
+            actions: vec![]
+        })
+    );
 }
 
 #[test]
 fn empty_bad_set_is_safe_but_empty_initial_is_invalid() {
-    assert_eq!(verify(&model(1, &[0], &[], &[]), Limits::default()).outcome, Outcome::VerifiedWithinModel);
-    assert!(matches!(Model::new(1, &[], &[], &[]), Err(InputError::EmptyInitial)));
+    assert_eq!(
+        verify(&model(1, &[0], &[], &[]), Limits::default()).outcome,
+        Outcome::VerifiedWithinModel
+    );
+    assert!(matches!(
+        Model::new(1, &[], &[], &[]),
+        Err(InputError::EmptyInitial)
+    ));
 }
 
 #[test]
 fn malformed_models_are_rejected() {
-    assert!(matches!(Model::new(0, &[0], &[], &[]), Err(InputError::StateCount)));
-    assert!(matches!(Model::new(MAX_STATES + 1, &[0], &[], &[]), Err(InputError::StateCount)));
+    assert!(matches!(
+        Model::new(0, &[0], &[], &[]),
+        Err(InputError::StateCount)
+    ));
+    assert!(matches!(
+        Model::new(MAX_STATES + 1, &[0], &[], &[]),
+        Err(InputError::StateCount)
+    ));
     assert!(Model::new(2, &[2], &[], &[]).is_err());
     assert!(Model::new(2, &[0, 0], &[], &[]).is_err());
     assert!(Model::new(2, &[0], &[1, 1], &[]).is_err());
@@ -60,13 +80,34 @@ fn malformed_models_are_rejected() {
 fn malformed_witnesses_do_not_panic_or_certify() {
     let m = model(2, &[0], &[1], &[Edge::new(0, 5, 1)]);
     for w in [
-        Witness { states: vec![], actions: vec![] },
-        Witness { states: vec![0, 1], actions: vec![] },
-        Witness { states: vec![usize::MAX], actions: vec![] },
-        Witness { states: vec![1], actions: vec![] },
-        Witness { states: vec![0], actions: vec![] },
-        Witness { states: vec![0, 1], actions: vec![6] },
-        Witness { states: vec![0; MAX_STATES + 1], actions: vec![5; MAX_STATES] },
+        Witness {
+            states: vec![],
+            actions: vec![],
+        },
+        Witness {
+            states: vec![0, 1],
+            actions: vec![],
+        },
+        Witness {
+            states: vec![usize::MAX],
+            actions: vec![],
+        },
+        Witness {
+            states: vec![1],
+            actions: vec![],
+        },
+        Witness {
+            states: vec![0],
+            actions: vec![],
+        },
+        Witness {
+            states: vec![0, 1],
+            actions: vec![6],
+        },
+        Witness {
+            states: vec![0; MAX_STATES + 1],
+            actions: vec![5; MAX_STATES],
+        },
     ] {
         assert!(replay(&m, &w).is_err());
     }
@@ -76,9 +117,18 @@ fn malformed_witnesses_do_not_panic_or_certify() {
 fn work_limit_is_inconclusive_including_before_reporting_a_witness() {
     let m = model(3, &[0], &[2], &[Edge::new(0, 7, 1), Edge::new(1, 9, 2)]);
     let complete = verify(&m, Limits::default());
-    assert!(matches!(complete.outcome, Outcome::ConcreteCounterexample(_)));
+    assert!(matches!(
+        complete.outcome,
+        Outcome::ConcreteCounterexample(_)
+    ));
     for max_work in 0..complete.stats.work {
-        let r = verify(&m, Limits { max_work, ..Limits::default() });
+        let r = verify(
+            &m,
+            Limits {
+                max_work,
+                ..Limits::default()
+            },
+        );
         assert_eq!(r.outcome, Outcome::Inconclusive(StopReason::WorkLimit));
         assert!(r.stats.work <= max_work);
         assert!(!r.execution_authorized());
@@ -88,8 +138,17 @@ fn work_limit_is_inconclusive_including_before_reporting_a_witness() {
 #[test]
 fn insufficient_refinements_never_approve() {
     let m = model(2, &[0], &[1], &[]);
-    let r = verify(&m, Limits { max_refinements: 0, ..Limits::default() });
-    assert_eq!(r.outcome, Outcome::Inconclusive(StopReason::RefinementLimit));
+    let r = verify(
+        &m,
+        Limits {
+            max_refinements: 0,
+            ..Limits::default()
+        },
+    );
+    assert_eq!(
+        r.outcome,
+        Outcome::Inconclusive(StopReason::RefinementLimit)
+    );
 }
 
 #[test]
@@ -113,8 +172,16 @@ fn cancellation_is_explicit_and_repeatable_at_every_visit() {
 fn maximum_length_chain_replays_without_recursion() {
     let edges: Vec<_> = (1..MAX_STATES).map(|s| Edge::new(s - 1, 1, s)).collect();
     let m = model(MAX_STATES, &[0], &[MAX_STATES - 1], &edges);
-    let r = verify(&m, Limits { max_work: 20_000_000, max_refinements: MAX_STATES - 1 });
-    let Outcome::ConcreteCounterexample(w) = r.outcome else { panic!("expected full-chain witness: {r:?}") };
+    let r = verify(
+        &m,
+        Limits {
+            max_work: 20_000_000,
+            max_refinements: MAX_STATES - 1,
+        },
+    );
+    let Outcome::ConcreteCounterexample(w) = r.outcome else {
+        panic!("expected full-chain witness: {r:?}")
+    };
     assert_eq!(w.states.len(), MAX_STATES);
     assert_eq!(replay(&m, &w), Ok(()));
 }
@@ -124,16 +191,23 @@ fn maximum_length_chain_replays_without_recursion() {
 fn closure_has_bad(m: &Model) -> bool {
     let n = m.state_count();
     let mut reach = vec![vec![false; n]; n];
-    for (state, row) in reach.iter_mut().enumerate() { row[state] = true; }
-    for edge in m.transitions() { reach[edge.source][edge.target] = true; }
+    for (state, row) in reach.iter_mut().enumerate() {
+        row[state] = true;
+    }
+    for edge in m.transitions() {
+        reach[edge.source][edge.target] = true;
+    }
     for via in 0..n {
         for source in 0..n {
             for target in 0..n {
-                reach[source][target] |= reach[source][via] && reach[via][target];
+                let through_via = reach[source][via] && reach[via][target];
+                reach[source][target] |= through_via;
             }
         }
     }
-    m.initial().iter().any(|&s| m.bad_states().any(|b| reach[s][b]))
+    m.initial()
+        .iter()
+        .any(|&s| m.bad_states().any(|b| reach[s][b]))
 }
 
 fn agrees_with_oracle(m: &Model) {
@@ -144,7 +218,9 @@ fn agrees_with_oracle(m: &Model) {
             assert!(closure_has_bad(m), "false unsafe: {m:?}");
             assert_eq!(replay(m, w), Ok(()));
         }
-        Outcome::Inconclusive(reason) => panic!("small fixture exhausted default budget: {reason:?}; {m:?}"),
+        Outcome::Inconclusive(reason) => {
+            panic!("small fixture exhausted default budget: {reason:?}; {m:?}")
+        }
     }
     assert!(r.stats.refinements < m.state_count());
     assert!(r.stats.work <= Limits::default().max_work);
@@ -192,11 +268,43 @@ fn seeded_labeled_graphs_match_independent_closure() {
         let mut edges = Vec::new();
         for source in 0..n {
             for target in 0..n {
-                if random() % 7 == 0 { edges.push(Edge::new(source, (random() % 4) as u32, target)); }
+                if random().is_multiple_of(7) {
+                    edges.push(Edge::new(source, (random() % 4) as u32, target));
+                }
             }
         }
         let initial = vec![(random() % n as u64) as usize];
-        let bad: Vec<_> = (0..n).filter(|_| random() % 4 == 0).collect();
+        let bad: Vec<_> = (0..n).filter(|_| random().is_multiple_of(4)).collect();
         agrees_with_oracle(&model(n, &initial, &bad, &edges));
     }
+}
+
+#[test]
+fn nondeterministic_frontier_keeps_all_matching_successors() {
+    let m = model(
+        4,
+        &[0],
+        &[3],
+        &[Edge::new(0, 5, 1), Edge::new(0, 5, 2), Edge::new(2, 6, 3)],
+    );
+    let r = verify(&m, Limits::default());
+    let Outcome::ConcreteCounterexample(w) = r.outcome else {
+        panic!("unsafe nondeterministic branch was lost")
+    };
+    assert_eq!(replay(&m, &w), Ok(()));
+}
+
+#[test]
+fn duplicate_edges_and_edge_order_do_not_change_safety() {
+    let edges = [Edge::new(0, 1, 1), Edge::new(1, 2, 2)];
+    for variant in [edges.to_vec(), vec![edges[1], edges[0], edges[0]]] {
+        agrees_with_oracle(&model(3, &[0], &[2], &variant));
+    }
+}
+
+#[test]
+fn cycles_with_unreachable_bad_states_terminate_safely() {
+    let m = model(4, &[0], &[3], &[Edge::new(0, 1, 1), Edge::new(1, 2, 0)]);
+    agrees_with_oracle(&m);
+    assert_eq!(verify(&m, Limits::default()).outcome, Outcome::VerifiedWithinModel);
 }
