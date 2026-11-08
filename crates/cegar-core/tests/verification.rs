@@ -306,5 +306,8 @@ fn duplicate_edges_and_edge_order_do_not_change_safety() {
 fn cycles_with_unreachable_bad_states_terminate_safely() {
     let m = model(4, &[0], &[3], &[Edge::new(0, 1, 1), Edge::new(1, 2, 0)]);
     agrees_with_oracle(&m);
-    assert_eq!(verify(&m, Limits::default()).outcome, Outcome::VerifiedWithinModel);
+    assert_eq!(
+        verify(&m, Limits::default()).outcome,
+        Outcome::VerifiedWithinModel
+    );
 }
