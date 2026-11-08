@@ -22,6 +22,7 @@ Canonical design sources remain [the research audit](../docs/RESEARCH_AUDIT.md),
 - [ADR 0003: historical finite-kernel decisions](decisions/0003-finite-cegar-kernel.md)
 - [ADR 0004: owner-directed Rust-only xtask validation](decisions/0004-rust-only-xtask-tooling.md)
 - [ADR 0005: raw-fixture reference checks](decisions/0005-raw-fixture-reference.md)
+- [ADR 0006: development-first integration and separate main promotion](decisions/0006-development-branch-integration.md)
 - [Rust-only oracle research and limitations](research/0003-rust-reference-verification.md)
 - [Rust xtask validation status](evidence/0003-rust-xtask-validation.md)
 - [Independent soundness audit and refinement-word distinction](research/0004-independent-soundness-audit.md)

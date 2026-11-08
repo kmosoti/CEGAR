@@ -37,11 +37,11 @@ Describe the change you have actually made:
 jj describe -m "feat(core): verify concrete counterexamples"
 ```
 
-**Feature branch workflow:** create changes from current main, but advance **only your feature bookmark** after validation. JJ does not automatically advance bookmarks when commits are created or described. Example, after checking the intended revision:
+**Work-branch workflow:** create changes from the *current development integration branch* identified by the tracking issue/PR, not automatically from `main`; advance **only your own work bookmark** until a reviewed, authorized integration. For Issue #2 this integration branch is `feat/2-bounded-verifier`, but verify it before subsequent milestones. JJ does not automatically advance bookmarks when commits are created or described. Example, after checking the intended revision:
 
 ```sh
 jj git fetch
-jj new main@origin
+jj new feat/2-bounded-verifier@origin
 # edit, test, and inspect
 jj status
 jj diff
@@ -53,9 +53,19 @@ jj git push --bookmark feat/bounded-reachability
 
 If a feature bookmark already exists, use `jj bookmark move feat/bounded-reachability --to @` instead of creating it twice. Use `jj git push --dry-run --bookmark feat/bounded-reachability` before pushing consequential updates, and verify that the target is the intended remote bookmark. If the checkout already contains work, inspect it before using `jj new` or rebasing.
 
-**Do not move or push the `main` bookmark as part of feature work.** Merge reviewed PRs to advance `main` only after validation and explicit authorization. Never force-push `main`, rewrite shared history, or force-push infrastructure history without explicit owner authorization. Avoid mixing mutating Git commands with JJ changes in the same worktree unless you understand colocation's automatic import/export behavior.
+**Do not move or push the `main` bookmark as part of feature work.** PRs for the current milestone target the approved development integration branch; promotion to `main` is an independent owner-authorized decision, not the default next step. Never force-push `main`, rewrite shared history, or force-push infrastructure history without explicit owner authorization. Avoid mixing mutating Git commands with JJ changes in the same worktree unless you understand colocation's automatic import/export behavior.
 
 Primary references: [JJ Git compatibility](https://docs.jj-vcs.dev/latest/git-compatibility/), [bookmarks](https://docs.jj-vcs.dev/latest/bookmarks/), and [GitHub workflow](https://docs.jj-vcs.dev/latest/github/).
+
+## Development integration and promotion
+
+The current shared integration branch for Issue #2 is `feat/2-bounded-verifier`. Its audit PRs target that branch. The design PR #1 and implementation PR #3 remain stacked and draft while development continues. This arrangement is not a mandate to reuse an issue-named branch forever.
+
+Before integration, verify the source PR's head/base, reviewed diff, relevant tests, current remote development tip, and ancestor relationship. Prefer a **non-forced fast-forward with expected-head verification** when source descends from development; this retains the original commit SHAs. If histories diverge, use a **new, reviewed merge commit** and revalidate; do not squash/rebase/force-update published shared history. An already-ancestor PR needs no duplicate merge. Avoid running an integration if explicit authorization is missing.
+
+After integration, verify remote refs and commit ancestry, check resulting CI, update the tracking issue and `knowledge/evidence/`, and note the PR's actual GitHub state. Do not confuse GitHub marking a PR merged with merging any *other* stacked PR into `main`.
+
+**Never automatically promote `main`, merge PR #1/#3 there, or close Issue #2.** The owner separately authorizes release/promotion after review and acceptance. [ADR 0006](knowledge/decisions/0006-development-branch-integration.md) records this workflow and its rationale.
 
 ## Issue guidelines
 
@@ -107,7 +117,7 @@ Every development PR should reference its tracking issue.
 - Include alternatives, explicit unsolved constraints, security impact, tested behaviors, and exact commands/results.
 - Do not silently expand a narrowly scoped issue into a new inference stack or execution platform.
 
-Human review is required for trusted collection, authority paths, policy, soundness claims, schemas, model access, networking, or any future executor. Only advance integration history after the review and validations pass.
+Human review is required for trusted collection, authority paths, policy, soundness claims, schemas, model access, networking, or any future executor. Only advance the owner-approved development integration history after the review, validations and explicit integration authorization. Promotion to `main` requires separate approval.
 
 ## Rust-only development and test tooling
 
