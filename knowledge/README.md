@@ -37,6 +37,7 @@ Canonical design sources remain [the research audit](../docs/RESEARCH_AUDIT.md),
 - [ADR 0008: experimental domain compiler on Fedora](decisions/0008-experimental-domain-compiler.md)
 - [Fedora domain-compiler findings](research/0007-domain-compiler-findings.md)
 - [Fedora domain-compiler validation](evidence/0007-fedora-domain-compiler.md)
+- [Fedora local-model probe validation](evidence/0008-fedora-local-model-probe.md)
 
 The core is **built and tested in CI**, not deployed, G15-measured or production-qualified. Autonomous implementation decisions remain subject to human review. A positive checker result applies only to the supplied finite model, never execution authority.
 

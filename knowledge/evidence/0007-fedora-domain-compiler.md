@@ -32,9 +32,18 @@ Baseline: integration tip `33424250f926a173396e8e95ee638f6be7c6cf94`
 (`feat/2-bounded-verifier`, after PR #6). `cegar-core` is unchanged; the new crate
 consumes it.
 
-Local run identity: working-copy revision `a684410538ba` on top of that baseline.
-CI run identity is recorded separately once the branch is pushed; the local
-result below must not be described as CI.
+Local run identity: the Fedora working-copy tree that was published on
+`issue/7-domain-compiler`. CI identity for the final head of that branch (domain
+compiler, adapter and mutation tests) is [run 42522675527](https://github.com/kmosoti/CEGAR/actions/runs/42522675527)
+on `505d602de307d820baf3bc2248efc94c14cd7a78`, which passed every gate above —
+including the new *Independent domain reference check* step:
+`{"status":"passed","oracle":"rust_domain_reference_dfs","cases":103,"verified":31,"counterexamples":72,"skipped_limits":0,"seed":19227491642723889}`.
+The intermediate commit `e8c5988` also passed ([run 42522270328](https://github.com/kmosoti/CEGAR/actions/runs/42522270328))
+and `22974def` passed ([run 42522618744](https://github.com/kmosoti/CEGAR/actions/runs/42522618744));
+the branch head later replaced `22974def` with a commit that also contains the
+mutation tests, so those two runs are provenance for earlier heads, not for the
+current one. Local results are not CI, and CI is not Fedora model execution; the
+local-model adapter path is covered by [validation 0008](0008-fedora-local-model-probe.md).
 
 ### Gates executed
 
@@ -45,7 +54,7 @@ the pinned toolchain, offline.
 | --- | --- |
 | `cargo fmt --all --check` | pass |
 | `cargo clippy --workspace --all-targets --locked --offline -- -D warnings` | pass |
-| `cargo test --workspace --locked --offline` | pass — 11 `cegar-core` unit, 19 `cegar-core` integration, 14 `cegar-domain` unit, 17 `cegar-domain` integration, 2 `xtask` unit, 1 doc test |
+| `cargo test --workspace --locked --offline` | pass — 11 `cegar-core` unit, 19 `cegar-core` integration, 14 `cegar-domain` unit, 17 `cegar-domain` integration, 8 `cegar-domain` mutation, 20 `cegar-local-model` unit, 6 adapter integration, 2 `xtask` unit, 1 doc test (98 total) |
 | `cargo test --workspace --release --locked --offline` | pass — same suite |
 | `cargo run -p xtask --locked --offline -- verify` | pass — unchanged finite-graph check: 28,868 exhaustive models, 1,000 seeded models, 24,187 witnesses replayed, 8 malformed models rejected |
 | `cargo run -p xtask --locked --offline -- domain` | pass — `{"status":"passed","oracle":"rust_domain_reference_dfs","cases":103,"verified":31,"counterexamples":72,"skipped_limits":0,"seed":19227491642723889}` |
@@ -69,6 +78,12 @@ cross-principal use without a rule; two independently ready unsafe publishes
 Gate classifications: stale snapshot; needs-evidence; contradictory premises;
 cyclic plan; unknown stage outputs; four-stage graph exceeding the 128-state
 bound.
+
+Mutation tests (8): each removes exactly one modeled obligation, branch or input
+and requires the verdict to change — retargeting the publish subject, narrowing
+the stage-output set, aligning the required suite, trusting the modeled issuer,
+permitting sharing, supplying the absent observation, staging the missing
+candidate, and invalidating a modeled pass's tenant.
 
 Also asserted: reordering the plan does not change the receipt; identical inputs
 repeat identically; no analysis reports execution authority.

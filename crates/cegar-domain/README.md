@@ -78,6 +78,10 @@ cargo test -p cegar-domain --locked --offline
 cargo run -p xtask --locked --offline -- domain   # differential check vs the independent reference
 ```
 
+`tests/mutations.rs` removes one obligation, branch or input at a time and
+requires the verdict to change, so a compiler that silently drops an unsafe
+attempt fails a test rather than a review.
+
 The differential check compares this compiler against a separately written
 depth-first reference interpreter over the same raw fixtures and a seeded
 corpus, and independently replays every compiler witness

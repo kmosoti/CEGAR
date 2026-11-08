@@ -80,7 +80,8 @@ which is why the mix matters.
 ## Follow-ups
 
 1. Model adapter (bounded, local, `std`-only) and the no-model baseline comparison.
-2. Mutation tests that delete one precondition or one bad edge at a time and
-   require the verdict to change.
+2. ~~Mutation tests that delete one precondition or one bad edge at a time and
+   require the verdict to change.~~ Done: `crates/cegar-domain/tests/mutations.rs`
+   holds eight single-obligation mutations, all of which flip the verdict.
 3. A horizon-scoped result (`H`-bounded prefix) if the bounded-prefix question is
    answered by the owner.

@@ -1,5 +1,5 @@
 [workspace]
-members = ["crates/cegar-core", "crates/cegar-domain", "xtask"]
+members = ["crates/cegar-core", "crates/cegar-domain", "crates/cegar-local-model", "xtask"]
 resolver = "3"
 
 [workspace.package]

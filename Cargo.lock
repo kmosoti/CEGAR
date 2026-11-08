@@ -16,6 +16,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "cegar-local-model"
+version = "0.1.0"
+dependencies = [
+ "cegar-domain",
+]
+
+[[package]]
 name = "xtask"
 version = "0.1.0"
 dependencies = [

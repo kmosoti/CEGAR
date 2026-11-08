@@ -31,7 +31,10 @@ jobs:
             crates/cegar-core/Cargo.toml crates/cegar-core/src/lib.rs \
             crates/cegar-core/tests/verification.rs \
             crates/cegar-domain/Cargo.toml crates/cegar-domain/src/*.rs \
-            crates/cegar-domain/tests/domain.rs \
+            crates/cegar-domain/tests/domain.rs crates/cegar-domain/tests/mutations.rs \
+            crates/cegar-local-model/Cargo.toml \
+            crates/cegar-local-model/src/*.rs crates/cegar-local-model/src/bin/*.rs \
+            crates/cegar-local-model/tests/adapter.rs \
             xtask/Cargo.toml xtask/src/*.rs > "$EVIDENCE/source-sha256.txt"
       - name: Install exact compiler
         id: toolchain

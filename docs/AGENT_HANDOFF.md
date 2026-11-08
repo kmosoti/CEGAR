@@ -29,9 +29,13 @@ plans into a bounded first-violation monitor graph for `cegar-core`, and
 reference interpreter over fixtures plus a seeded corpus. Read
 [ADR 0008](../knowledge/decisions/0008-experimental-domain-compiler.md),
 [research 0007](../knowledge/research/0007-domain-compiler-findings.md) and
-[validation 0007](../knowledge/evidence/0007-fedora-domain-compiler.md). It has
-no collector, no model adapter yet, and no execution authority; nothing here
-changes the Issue #2 acceptance criteria or promotes anything to `main`.
+[validation 0007](../knowledge/evidence/0007-fedora-domain-compiler.md) and
+[validation 0008](../knowledge/evidence/0008-fedora-local-model-probe.md).
+`crates/cegar-local-model` is a bounded loopback adapter to the already-running
+local TinyBERT reranker; it emits untrusted route claims that select one of three
+pinned templates and never evidence, policy or authority. There is still no
+collector and no execution authority, and nothing here changes the Issue #2
+acceptance criteria or promotes anything to `main`.
 
 ## Next contribution: review before adding machinery
 
