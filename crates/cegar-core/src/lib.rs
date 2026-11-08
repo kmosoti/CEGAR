@@ -531,17 +531,25 @@ mod abstraction_tests {
                         let edge = Transition::new(source, action, target);
                         let model = Model::new(n, &[source], &[target], &[edge]).unwrap();
                         let trace = abstract_trace(&model, &partition, &mut budget())
-                            .unwrap()
-                            .expect("concrete edge must project to a bad trace");
+                            .unwrap_or_else(|reason| panic!("abstract search stopped ({reason:?}): partition={:?}, initial=[{source}], bad=[{target}], edge=({source},{action},{target})", partition.block_of))
+                            .unwrap_or_else(|| panic!("missing projected trace: partition={:?}, initial=[{source}], bad=[{target}], edge=({source},{action},{target})", partition.block_of));
+                        let fixture = || {
+                            format!(
+                                "partition={:?}, initial=[{source}], bad=[{target}], edge=({source},{action},{target})",
+                                partition.block_of
+                            )
+                        };
                         if partition.block_of[source] == partition.block_of[target] {
-                            assert_eq!(trace.blocks, [partition.block_of[source]]);
-                            assert!(trace.actions.is_empty());
+                            assert_eq!(trace.blocks, [partition.block_of[source]], "{}", fixture());
+                            assert!(trace.actions.is_empty(), "{}", fixture());
                         } else {
                             assert_eq!(
                                 trace.blocks,
-                                [partition.block_of[source], partition.block_of[target]]
+                                [partition.block_of[source], partition.block_of[target]],
+                                "{}",
+                                fixture()
                             );
-                            assert_eq!(trace.actions, [action]);
+                            assert_eq!(trace.actions, [action], "{}", fixture());
                         }
                     }
                 }
@@ -552,7 +560,8 @@ mod abstraction_tests {
                 for bad_mask in 0..(1 << n) {
                     let bad: Vec<_> = (0..n).filter(|s| bad_mask & (1 << s) != 0).collect();
                     let model = Model::new(n, &initial, &bad, &[]).unwrap();
-                    let trace = abstract_trace(&model, &partition, &mut budget()).unwrap();
+                    let trace = abstract_trace(&model, &partition, &mut budget())
+                        .unwrap_or_else(|reason| panic!("abstract search stopped ({reason:?}): partition={:?}, initial={initial:?}, bad={bad:?}, edges=[]", partition.block_of));
                     let overlap = initial.iter().any(|&i| {
                         bad.iter()
                             .any(|&b| partition.block_of[i] == partition.block_of[b])
@@ -566,6 +575,209 @@ mod abstraction_tests {
                 }
             }
         }
+    }
+
+    // Mirror the run prefix for a zero-step real counterexample. Using the
+    // measured prefix rather than the completed run's total ensures these
+    // tests fail if replay is accidentally removed from budget accounting.
+    fn work_before_zero_step_replay(model: &Model) -> u64 {
+        let mut prefix = budget();
+        prefix.tick().unwrap(); // run's loop tick
+        let partition = Partition::coarse(1);
+        let trace = abstract_trace(model, &partition, &mut prefix)
+            .unwrap()
+            .unwrap();
+        let Feasibility::Real(witness) =
+            concretize(model, &partition, &trace, &mut prefix).unwrap()
+        else {
+            panic!("zero-step initial bad state must be feasible");
+        };
+        let mut replay_budget = budget();
+        assert_eq!(
+            replay_inner(model, &witness, || replay_budget.tick()),
+            Ok(Ok(()))
+        );
+        let complete = verify(model, Limits::default());
+        assert!(matches!(
+            complete.outcome,
+            Outcome::ConcreteCounterexample(_)
+        ));
+        assert_eq!(
+            complete.stats.work,
+            prefix.stats.work + replay_budget.stats.work,
+            "run prefix or replay accounting changed; revisit this boundary test"
+        );
+        prefix.stats.work
+    }
+
+    #[test]
+    fn witness_replay_spends_budget() {
+        let model = Model::new(1, &[0], &[0], &[]).unwrap();
+        let before_replay = work_before_zero_step_replay(&model);
+        let report = verify(
+            &model,
+            Limits {
+                max_work: before_replay,
+                ..Limits::default()
+            },
+        );
+        assert_eq!(report.outcome, Outcome::Inconclusive(StopReason::WorkLimit));
+    }
+
+    #[test]
+    fn witness_replay_observes_cancellation() {
+        let model = Model::new(1, &[0], &[0], &[]).unwrap();
+        let before_replay = work_before_zero_step_replay(&model);
+        let mut visits = 0;
+        let report = verify_with_cancel(&model, Limits::default(), || {
+            let cancel = visits == before_replay;
+            visits += 1;
+            cancel
+        });
+        assert_eq!(report.outcome, Outcome::Inconclusive(StopReason::Cancelled));
+    }
+
+    #[test]
+    fn concretize_keeps_all_nondeterministic_successors() {
+        let a = Transition::new(0, 5, 1);
+        let b = Transition::new(0, 5, 2);
+        let tail = Transition::new(2, 6, 3);
+        for edges in [[a, b, tail], [b, a, tail]] {
+            let model = Model::new(4, &[0], &[3], &edges).unwrap();
+            let partition = Partition {
+                block_of: vec![0, 1, 1, 2],
+                count: 3,
+            };
+            let trace = AbstractTrace {
+                blocks: vec![0, 1, 2],
+                actions: vec![5, 6],
+            };
+            let Feasibility::Real(witness) =
+                concretize(&model, &partition, &trace, &mut budget()).unwrap()
+            else {
+                panic!("nondeterministic successor 2 reaches bad: {model:?}");
+            };
+            assert_eq!(witness.states, [0, 2, 3]);
+            assert_eq!(witness.actions, [5, 6]);
+            assert_eq!(replay(&model, &witness), Ok(()));
+        }
+    }
+
+    fn replay_scan_fixture() -> (Model, Witness) {
+        let model = Model::new(
+            2,
+            &[0],
+            &[1],
+            &[Transition::new(0, 8, 0), Transition::new(0, 9, 1)],
+        )
+        .unwrap();
+        let witness = Witness {
+            states: vec![0, 1],
+            actions: vec![9],
+        };
+        (model, witness)
+    }
+
+    #[test]
+    fn replay_transition_scan_spends_budget() {
+        let (model, witness) = replay_scan_fixture();
+        // Shape tick + two state ticks + first edge tick = 4. The matching
+        // second edge requires another tick and must not be returned unchecked.
+        let mut b = Budget {
+            limits: Limits {
+                max_work: 4,
+                ..Limits::default()
+            },
+            stats: Stats::default(),
+            cancel: || false,
+        };
+        assert_eq!(
+            replay_inner(&model, &witness, || b.tick()),
+            Err(StopReason::WorkLimit)
+        );
+    }
+
+    #[test]
+    fn replay_transition_scan_observes_cancellation() {
+        let (model, witness) = replay_scan_fixture();
+        let mut visits = 0;
+        let mut b = Budget {
+            limits: Limits::default(),
+            stats: Stats::default(),
+            cancel: || {
+                let cancel = visits == 4;
+                visits += 1;
+                cancel
+            },
+        };
+        assert_eq!(
+            replay_inner(&model, &witness, || b.tick()),
+            Err(StopReason::Cancelled)
+        );
+    }
+
+    fn work_before_edge_replay(model: &Model) -> u64 {
+        let mut prefix = budget();
+        let mut partition = Partition::coarse(2);
+        prefix.tick().unwrap();
+        let trace = abstract_trace(model, &partition, &mut prefix)
+            .unwrap()
+            .unwrap();
+        let Feasibility::Spurious { block, frontier } =
+            concretize(model, &partition, &trace, &mut prefix).unwrap()
+        else {
+            panic!("expected initial spurious zero-step trace");
+        };
+        partition.split(block, &frontier, &mut prefix).unwrap();
+        prefix.tick().unwrap();
+        let trace = abstract_trace(model, &partition, &mut prefix)
+            .unwrap()
+            .unwrap();
+        let Feasibility::Real(witness) =
+            concretize(model, &partition, &trace, &mut prefix).unwrap()
+        else {
+            panic!("expected real one-edge trace after split");
+        };
+        assert_eq!(witness.states, [0, 1]);
+        assert_eq!(witness.actions, [9]);
+        let mut replay_budget = budget();
+        assert_eq!(
+            replay_inner(model, &witness, || replay_budget.tick()),
+            Ok(Ok(()))
+        );
+        assert_eq!(replay_budget.stats.work, 5);
+        assert_eq!(
+            verify(model, Limits::default()).stats.work,
+            prefix.stats.work + replay_budget.stats.work
+        );
+        prefix.stats.work
+    }
+
+    #[test]
+    fn verify_replay_transition_scan_spends_budget() {
+        let (model, _) = replay_scan_fixture();
+        let cutoff = work_before_edge_replay(&model) + 4;
+        let report = verify(
+            &model,
+            Limits {
+                max_work: cutoff,
+                ..Limits::default()
+            },
+        );
+        assert_eq!(report.outcome, Outcome::Inconclusive(StopReason::WorkLimit));
+    }
+
+    #[test]
+    fn verify_replay_transition_scan_observes_cancellation() {
+        let (model, _) = replay_scan_fixture();
+        let cutoff = work_before_edge_replay(&model) + 4;
+        let mut visits = 0;
+        let report = verify_with_cancel(&model, Limits::default(), || {
+            let cancel = visits == cutoff;
+            visits += 1;
+            cancel
+        });
+        assert_eq!(report.outcome, Outcome::Inconclusive(StopReason::Cancelled));
     }
 
     #[test]

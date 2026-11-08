@@ -26,6 +26,8 @@ Canonical design sources remain [the research audit](../docs/RESEARCH_AUDIT.md),
 - [Rust xtask validation status](evidence/0003-rust-xtask-validation.md)
 - [Independent soundness audit and refinement-word distinction](research/0004-independent-soundness-audit.md)
 - [Independent audit validation](evidence/0004-independent-audit-validation.md)
+- [Targeted fault-injection findings](research/0005-targeted-fault-injection.md)
+- [Fault-injection validation](evidence/0005-fault-injection-validation.md)
 
 The core is **built and tested in CI**, not deployed, G15-measured or production-qualified. Autonomous implementation decisions remain subject to human review. A positive checker result applies only to the supplied finite model, never execution authority.
 
