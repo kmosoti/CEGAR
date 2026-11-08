@@ -54,7 +54,7 @@ VerifiedWithinModel    Concrete feasibility check
             ConcreteCounterexample   Refine alpha, repeat
 ```
 
-The refinement must exclude the spurious behavior **without excluding any concrete behavior**. If its budget is exhausted, return `inconclusive`. Never declare a spurious abstract trace to be a real exploit without replay.
+The refinement must exclude spurious behavior **without excluding any concrete behavior**. In the current frontier-splitting implementation, this means separating the feasible frontier from the incompatible source or bad endpoint that made the selected stitching spurious. It does **not** necessarily eliminate the entire selected block/action word: another spurious prefix may still yield a refined word that maps back to the original under the coarsening map (even when their numeric block IDs happen to match). Strict progress instead follows from splitting a block into two nonempty blocks, at most `|S| - 1` times. See the direct intermediate-partition regression and [audit record](../knowledge/research/0004-independent-soundness-audit.md); whether stronger per-word elimination is required is a design-review question. If its budget is exhausted, return `inconclusive`. Never declare a spurious abstract trace to be a real exploit without replay.
 
 For finite exact reachability, breadth-first search already establishes safety of the provided model; abstraction is most useful when it reduces a larger problem. Do not introduce a solver merely to label a graph search as formal.
 

@@ -492,3 +492,193 @@ pub fn verify_with_cancel(model: &Model, limits: Limits, cancel: impl FnMut() ->
         stats: budget.stats,
     }
 }
+
+#[cfg(test)]
+mod abstraction_tests {
+    use super::*;
+
+    fn budget() -> Budget<impl FnMut() -> bool> {
+        Budget {
+            limits: Limits::default(),
+            stats: Stats::default(),
+            cancel: || false,
+        }
+    }
+
+    #[test]
+    fn every_partition_projects_initial_bad_and_labeled_edges() {
+        // All assignments of four states to four possible blocks, retaining only
+        // contiguous nonempty block IDs. Cross-block edges are tested in isolation
+        // so no alternate edge can mask a dropped projection or wrong action.
+        // A same-block edge is unobservable in a simple BFS trace: the initial
+        // block is already bad, so that case checks zero-step reachability only.
+        let n: usize = 4;
+        for assignment in 0usize..n.pow(n as u32) {
+            let mut value = assignment;
+            let mut block_of = Vec::new();
+            for _ in 0..n {
+                block_of.push(value % n);
+                value /= n;
+            }
+            let count = 1 + *block_of.iter().max().unwrap();
+            if (0..count).any(|b| !block_of.contains(&b)) {
+                continue;
+            }
+            let partition = Partition { block_of, count };
+            for source in 0..n {
+                for target in 0..n {
+                    for action in [0, u32::MAX] {
+                        let edge = Transition::new(source, action, target);
+                        let model = Model::new(n, &[source], &[target], &[edge]).unwrap();
+                        let trace = abstract_trace(&model, &partition, &mut budget())
+                            .unwrap()
+                            .expect("concrete edge must project to a bad trace");
+                        if partition.block_of[source] == partition.block_of[target] {
+                            assert_eq!(trace.blocks, [partition.block_of[source]]);
+                            assert!(trace.actions.is_empty());
+                        } else {
+                            assert_eq!(
+                                trace.blocks,
+                                [partition.block_of[source], partition.block_of[target]]
+                            );
+                            assert_eq!(trace.actions, [action]);
+                        }
+                    }
+                }
+            }
+            // With no edges, all and only initial/bad block overlaps are reachable.
+            for initial_mask in 1..(1 << n) {
+                let initial: Vec<_> = (0..n).filter(|s| initial_mask & (1 << s) != 0).collect();
+                for bad_mask in 0..(1 << n) {
+                    let bad: Vec<_> = (0..n).filter(|s| bad_mask & (1 << s) != 0).collect();
+                    let model = Model::new(n, &initial, &bad, &[]).unwrap();
+                    let trace = abstract_trace(&model, &partition, &mut budget()).unwrap();
+                    let overlap = initial.iter().any(|&i| {
+                        bad.iter()
+                            .any(|&b| partition.block_of[i] == partition.block_of[b])
+                    });
+                    assert_eq!(
+                        trace.is_some(),
+                        overlap,
+                        "partition={:?} initial={initial:?} bad={bad:?}",
+                        partition.block_of
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn blocked_frontier_splits_without_losing_states() {
+        let model = Model::new(
+            5,
+            &[0],
+            &[4],
+            &[
+                Transition::new(0, 10, 1),
+                Transition::new(2, 20, 3),
+                Transition::new(3, 30, 4),
+            ],
+        )
+        .unwrap();
+        let mut partition = Partition {
+            block_of: vec![0, 1, 1, 2, 3],
+            count: 4,
+        };
+        let trace = abstract_trace(&model, &partition, &mut budget())
+            .unwrap()
+            .unwrap();
+        assert_eq!(trace.blocks, [0, 1, 2, 3]);
+        assert_eq!(trace.actions, [10, 20, 30]);
+        let Feasibility::Spurious { block, frontier } =
+            concretize(&model, &partition, &trace, &mut budget()).unwrap()
+        else {
+            panic!("expected spurious trace");
+        };
+        assert_eq!(block, 1);
+        assert_eq!(frontier, [false, true, false, false, false]);
+        let old = partition.block_of.clone();
+        partition.split(block, &frontier, &mut budget()).unwrap();
+        assert_eq!(partition.count, 5);
+        for state in 0..model.state_count {
+            assert_eq!(
+                partition.block_of[state],
+                if frontier[state] { 4 } else { old[state] }
+            );
+        }
+        assert!(
+            abstract_trace(&model, &partition, &mut budget())
+                .unwrap()
+                .is_none()
+        );
+    }
+
+    #[test]
+    fn bad_endpoint_frontier_splits_from_unreachable_bad_state() {
+        let model = Model::new(3, &[0], &[2], &[Transition::new(0, 42, 1)]).unwrap();
+        let mut partition = Partition {
+            block_of: vec![0, 1, 1],
+            count: 2,
+        };
+        let trace = abstract_trace(&model, &partition, &mut budget())
+            .unwrap()
+            .unwrap();
+        assert_eq!(trace.blocks, [0, 1]);
+        assert_eq!(trace.actions, [42]);
+        let Feasibility::Spurious { block, frontier } =
+            concretize(&model, &partition, &trace, &mut budget()).unwrap()
+        else {
+            panic!("expected spurious bad endpoint");
+        };
+        assert_eq!(block, 1);
+        assert_eq!(frontier, [false, true, false]);
+        partition.split(block, &frontier, &mut budget()).unwrap();
+        assert_eq!(partition.block_of, [0, 2, 1]);
+        assert!(
+            abstract_trace(&model, &partition, &mut budget())
+                .unwrap()
+                .is_none()
+        );
+    }
+
+    #[test]
+    fn refinement_can_leave_same_abstract_word_via_a_different_spurious_prefix() {
+        let model = Model::new(
+            6,
+            &[0],
+            &[5],
+            &[
+                Transition::new(0, 10, 1),
+                Transition::new(2, 20, 3),
+                Transition::new(1, 20, 4),
+                Transition::new(3, 30, 5),
+            ],
+        )
+        .unwrap();
+        let mut partition = Partition {
+            block_of: vec![0, 1, 1, 2, 2, 3],
+            count: 4,
+        };
+        let trace = abstract_trace(&model, &partition, &mut budget())
+            .unwrap()
+            .unwrap();
+        assert_eq!(trace.blocks, [0, 1, 2, 3]);
+        assert_eq!(trace.actions, [10, 20, 30]);
+        let Feasibility::Spurious { block, frontier } =
+            concretize(&model, &partition, &trace, &mut budget()).unwrap()
+        else {
+            panic!("expected spurious trace");
+        };
+        assert_eq!(block, 2);
+        assert_eq!(frontier, [false, false, false, false, true, false]);
+        partition.split(block, &frontier, &mut budget()).unwrap();
+        let next = abstract_trace(&model, &partition, &mut budget())
+            .unwrap()
+            .unwrap();
+        assert_eq!(next.blocks, trace.blocks);
+        assert_eq!(next.actions, trace.actions);
+        // Nonetheless the split eliminated the particular concrete-frontier
+        // mismatch and increased the bounded number of nonempty blocks.
+        assert_eq!(partition.count, 5);
+    }
+}

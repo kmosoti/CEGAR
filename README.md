@@ -12,7 +12,7 @@ CEGAR explores a local Rust service that turns proposed agent actions into expli
 
 The current bounds are 128 states and 512 transitions. Results apply only to the supplied finite model, whose completeness and real-world fidelity are not established by the checker. `execution_authorized()` is always false.
 
-[Historical validation evidence](knowledge/evidence/0002-bounded-core-validation.md) covers the earlier design; [Rust-only xtask validation](knowledge/evidence/0003-rust-xtask-validation.md) records the current compiler, tests, failures, and passing CI run. Fifteen integration tests and one doc test pass in debug and release. The tests include 28,868 exhaustive small models; a separate Rust xtask independently checks reachability and witnesses. Test coverage is not a proof of every possible implementation behavior.
+[Historical validation evidence](knowledge/evidence/0002-bounded-core-validation.md) and [Rust-only xtask validation](knowledge/evidence/0003-rust-xtask-validation.md) record earlier CI runs, not validation of later changes. The tests include 28,868 exhaustive small models; a separate Rust xtask checks reachability and witnesses against raw generated inputs. [The independent audit](knowledge/research/0004-independent-soundness-audit.md) distinguishes arguments from tests and remaining uncertainties. Test coverage is not a proof of every possible implementation behavior.
 
 ## Run the validation
 

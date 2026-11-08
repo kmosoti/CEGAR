@@ -311,3 +311,177 @@ fn cycles_with_unreachable_bad_states_terminate_safely() {
         Outcome::VerifiedWithinModel
     );
 }
+
+#[test]
+fn state_renaming_edge_order_and_added_bad_or_edges_preserve_unsafety() {
+    // Self-loop, duplicated transition, parallel labels, disconnected component,
+    // nondeterministic branch, and multiple initial and bad states.
+    let edges = vec![
+        Edge::new(0, 3, 0),
+        Edge::new(0, 5, 1),
+        Edge::new(0, 5, 2),
+        Edge::new(0, 6, 2),
+        Edge::new(2, 7, 3),
+        Edge::new(2, 7, 3),
+        Edge::new(4, 8, 4),
+    ];
+    let initial = [0, 4];
+    let bad = [3, 5];
+    let permutation = [4, 2, 5, 1, 0, 3];
+    for order in [edges.clone(), edges.iter().rev().copied().collect()] {
+        let renamed: Vec<_> = order
+            .iter()
+            .map(|e| Edge::new(permutation[e.source], e.action, permutation[e.target]))
+            .collect();
+        let renamed_initial: Vec<_> = initial.iter().map(|&s| permutation[s]).collect();
+        let renamed_bad: Vec<_> = bad.iter().map(|&s| permutation[s]).collect();
+        for m in [
+            model(6, &initial, &bad, &order),
+            model(6, &renamed_initial, &renamed_bad, &renamed),
+        ] {
+            agrees_with_oracle(&m);
+            assert!(
+                matches!(
+                    verify(&m, Limits::default()).outcome,
+                    Outcome::ConcreteCounterexample(_)
+                ),
+                "{m:?}"
+            );
+        }
+    }
+    let base = model(6, &[0], &[3], &edges);
+    assert!(matches!(
+        verify(&base, Limits::default()).outcome,
+        Outcome::ConcreteCounterexample(_)
+    ));
+    let mut more_edges = edges.clone();
+    more_edges.push(Edge::new(4, u32::MAX, 5));
+    let more = model(6, &[0], &[3, 5], &more_edges);
+    agrees_with_oracle(&more);
+    assert!(matches!(
+        verify(&more, Limits::default()).outcome,
+        Outcome::ConcreteCounterexample(_)
+    ));
+}
+
+#[test]
+fn exact_boundaries_and_constructor_roundtrip_preserve_labels_and_duplicates() {
+    let edges = vec![Edge::new(0, u32::MAX, MAX_STATES - 1); MAX_TRANSITIONS];
+    let m = model(
+        MAX_STATES,
+        &[MAX_STATES - 1, 0],
+        &[MAX_STATES - 1, 1],
+        &edges,
+    );
+    assert_eq!(m.initial(), &[MAX_STATES - 1, 0]);
+    assert_eq!(m.bad_states().collect::<Vec<_>>(), [1, MAX_STATES - 1]);
+    assert_eq!(m.transitions(), edges);
+    assert_eq!(
+        Model::new(2, &[0, 0, 0], &[], &[]).unwrap_err(),
+        InputError::SetTooLarge("initial")
+    );
+    assert_eq!(
+        Model::new(2, &[0], &[0, 0, 0], &[]).unwrap_err(),
+        InputError::SetTooLarge("bad")
+    );
+    assert_eq!(
+        Model::new(2, &[0], &[], &[Edge::new(0, 0, 2)]).unwrap_err(),
+        InputError::UnknownState {
+            field: "target",
+            state: 2
+        }
+    );
+}
+
+#[test]
+fn cancellation_and_exact_work_boundary_cover_real_witness_replay() {
+    let m = model(
+        4,
+        &[0],
+        &[3],
+        &[Edge::new(0, 7, 1), Edge::new(1, 8, 2), Edge::new(2, 9, 3)],
+    );
+    let complete = verify(&m, Limits::default());
+    assert!(matches!(
+        complete.outcome,
+        Outcome::ConcreteCounterexample(_)
+    ));
+    for stop_at in 0..complete.stats.work {
+        let mut visits = 0;
+        let report = verify_with_cancel(&m, Limits::default(), || {
+            let stop = visits == stop_at;
+            visits += 1;
+            stop
+        });
+        assert_eq!(
+            report.outcome,
+            Outcome::Inconclusive(StopReason::Cancelled),
+            "stop_at={stop_at}"
+        );
+        assert_eq!(report.stats.work, stop_at);
+    }
+    for max_work in [complete.stats.work, complete.stats.work + 1] {
+        assert_eq!(
+            verify(
+                &m,
+                Limits {
+                    max_work,
+                    ..Limits::default()
+                }
+            )
+            .outcome,
+            complete.outcome
+        );
+    }
+    assert_eq!(
+        verify(
+            &m,
+            Limits {
+                max_work: complete.stats.work - 1,
+                ..Limits::default()
+            }
+        )
+        .outcome,
+        Outcome::Inconclusive(StopReason::WorkLimit)
+    );
+}
+
+#[test]
+fn refinement_budget_boundary_and_cyclic_replay() {
+    let m = model(4, &[0], &[3], &[Edge::new(0, 1, 2), Edge::new(1, 2, 3)]);
+    let complete = verify(&m, Limits::default());
+    assert!(complete.stats.refinements >= 2, "{complete:?}");
+    assert_eq!(
+        verify(
+            &m,
+            Limits {
+                max_refinements: complete.stats.refinements - 1,
+                ..Limits::default()
+            }
+        )
+        .outcome,
+        Outcome::Inconclusive(StopReason::RefinementLimit)
+    );
+    assert_eq!(
+        verify(
+            &m,
+            Limits {
+                max_refinements: complete.stats.refinements,
+                ..Limits::default()
+            }
+        )
+        .outcome,
+        Outcome::VerifiedWithinModel
+    );
+    let cyclic = model(2, &[0], &[1], &[Edge::new(0, 1, 0), Edge::new(0, 2, 1)]);
+    assert_eq!(
+        replay(
+            &cyclic,
+            &Witness {
+                states: vec![0, 0, 1],
+                actions: vec![1, 2]
+            }
+        ),
+        Ok(())
+    );
+}

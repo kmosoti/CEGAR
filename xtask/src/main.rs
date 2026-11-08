@@ -19,16 +19,24 @@ struct Totals {
     rejected: usize,
 }
 
-/// Independent algorithm: iteratively find all states that can reach Bad.
-/// Does not use the CEGAR quotient, concretization, or the core's replay.
-fn reference_reaches_bad(model: &Model) -> bool {
-    let mut can_reach = vec![false; model.state_count()];
-    for state in model.bad_states() {
+/// Unmodified generated input, kept separate from the constructor under test.
+#[derive(Debug)]
+struct Fixture<'a> {
+    n: usize,
+    initial: &'a [usize],
+    bad: &'a [usize],
+    edges: &'a [Transition],
+}
+
+/// Backwards fixed point over raw input, not the verifier's constructed Model.
+fn reference_reaches_bad(fixture: &Fixture<'_>) -> bool {
+    let mut can_reach = vec![false; fixture.n];
+    for &state in fixture.bad {
         can_reach[state] = true;
     }
     loop {
         let mut changed = false;
-        for edge in model.transitions() {
+        for edge in fixture.edges {
             if can_reach[edge.target] && !can_reach[edge.source] {
                 can_reach[edge.source] = true;
                 changed = true;
@@ -38,31 +46,27 @@ fn reference_reaches_bad(model: &Model) -> bool {
             break;
         }
     }
-    model.initial().iter().any(|&state| can_reach[state])
+    fixture.initial.iter().any(|&state| can_reach[state])
 }
 
-/// Independent witness checker; no call to cegar_core::replay.
-fn reference_witness_valid(model: &Model, witness: &Witness) -> bool {
+/// Independent labeled witness check against raw input, not core replay.
+fn reference_witness_valid(fixture: &Fixture<'_>, witness: &Witness) -> bool {
     if witness.states.is_empty()
         || witness.states.len() != witness.actions.len() + 1
-        || witness.states.len() > model.state_count()
+        || witness.states.len() > MAX_STATES
     {
         return false;
     }
-    if !model.initial().contains(&witness.states[0]) {
+    if !fixture.initial.contains(&witness.states[0]) {
         return false;
     }
     let Some(&last) = witness.states.last() else {
         return false;
     };
-    if !model.bad_states().any(|state| state == last) {
+    if !fixture.bad.contains(&last) {
         return false;
     }
-    if witness
-        .states
-        .iter()
-        .any(|&state| state >= model.state_count())
-    {
+    if witness.states.iter().any(|&state| state >= fixture.n) {
         return false;
     }
     witness
@@ -70,34 +74,52 @@ fn reference_witness_valid(model: &Model, witness: &Witness) -> bool {
         .windows(2)
         .zip(witness.actions.iter())
         .all(|(states, &action)| {
-            model.transitions().iter().any(|edge| {
+            fixture.edges.iter().any(|edge| {
                 edge.source == states[0] && edge.action == action && edge.target == states[1]
             })
         })
 }
 
-fn compare(model: &Model, group: &str, index: usize, totals: &mut Totals) -> Result<(), String> {
-    let expected = reference_reaches_bad(model);
-    let report = verify(model, Limits::default());
+fn compare(
+    fixture: &Fixture<'_>,
+    group: &str,
+    index: usize,
+    totals: &mut Totals,
+) -> Result<(), String> {
+    let model = Model::new(fixture.n, fixture.initial, fixture.bad, fixture.edges)
+        .map_err(|error| format!("{group} #{index}: fixture rejected: {error}; {fixture:?}"))?;
+    let mut expected_bad = fixture.bad.to_vec();
+    expected_bad.sort_unstable();
+    if model.state_count() != fixture.n
+        || model.initial() != fixture.initial
+        || model.transitions() != fixture.edges
+        || model.bad_states().collect::<Vec<_>>() != expected_bad
+    {
+        return Err(format!(
+            "{group} #{index}: constructor changed input: {fixture:?}; {model:?}"
+        ));
+    }
+    let expected = reference_reaches_bad(fixture);
+    let report = verify(&model, Limits::default());
     if report.execution_authorized() || report.scope() != "supplied_finite_model_only" {
         return Err(format!(
-            "{group} #{index}: authority/scope invariant violated"
+            "{group} #{index}: authority/scope invariant violated; fixture {fixture:?}"
         ));
     }
 
     match (expected, report.outcome) {
         (false, Outcome::VerifiedWithinModel) => Ok(()),
         (true, Outcome::ConcreteCounterexample(witness)) => {
-            if !reference_witness_valid(model, &witness) {
+            if !reference_witness_valid(fixture, &witness) {
                 return Err(format!(
-                    "{group} #{index}: non-replayable witness {witness:?}; model {model:?}"
+                    "{group} #{index}: non-replayable witness {witness:?}; fixture {fixture:?}"
                 ));
             }
             totals.replayed += 1;
             Ok(())
         }
         (wanted, actual) => Err(format!(
-            "{group} #{index}: oracle says reachable_bad={wanted}, got {actual:?}; model {model:?}"
+            "{group} #{index}: oracle says reachable_bad={wanted}, got {actual:?}; fixture {fixture:?}; model {model:?}"
         )),
     }
 }
@@ -123,9 +145,13 @@ fn exhaustive(totals: &mut Totals) -> Result<(), String> {
                 let initial = subset(n, initial_bits);
                 for bad_bits in 0..(1usize << n) {
                     let bad = subset(n, bad_bits);
-                    let model = Model::new(n, &initial, &bad, &edges)
-                        .map_err(|error| format!("unexpected fixture rejection: {error}"))?;
-                    compare(&model, "exhaustive", totals.exhaustive, totals)?;
+                    let fixture = Fixture {
+                        n,
+                        initial: &initial,
+                        bad: &bad,
+                        edges: &edges,
+                    };
+                    compare(&fixture, "exhaustive", totals.exhaustive, totals)?;
                     totals.exhaustive += 1;
                 }
             }
@@ -165,13 +191,17 @@ fn seeded(totals: &mut Totals) -> Result<(), String> {
                 }
             }
         }
-        let initial_bits = 1 + (rng.next() as usize % ((1usize << n) - 1));
-        let bad_bits = rng.next() as usize % (1usize << n);
+        let initial_bits = 1 + (rng.next() % ((1u64 << n) - 1)) as usize;
+        let bad_bits = (rng.next() % (1u64 << n)) as usize;
         let initial = subset(n, initial_bits);
         let bad = subset(n, bad_bits);
-        let model = Model::new(n, &initial, &bad, &edges)
-            .map_err(|error| format!("seeded fixture #{index} rejected: {error}"))?;
-        compare(&model, "seeded", index, totals)?;
+        let fixture = Fixture {
+            n,
+            initial: &initial,
+            bad: &bad,
+            edges: &edges,
+        };
+        compare(&fixture, "seeded", index, totals)?;
         totals.seeded += 1;
     }
     Ok(())
@@ -191,8 +221,10 @@ fn invalid_models(totals: &mut Totals) -> Result<(), String> {
         Model::new(2, &[0], &[], &[Transition::new(2, 0, 0)]).is_err(),
         Model::new(2, &[0], &[], &too_many).is_err(),
     ];
-    if rejected.iter().any(|&is_rejected| !is_rejected) {
-        return Err("one or more malformed finite models were admitted".into());
+    if let Some(index) = rejected.iter().position(|&is_rejected| !is_rejected) {
+        return Err(format!(
+            "malformed constructor fixture #{index} was admitted"
+        ));
     }
     totals.rejected = rejected.len();
     Ok(())
@@ -221,5 +253,114 @@ fn main() {
     if let Err(error) = run() {
         eprintln!("xtask verification failed: {error}");
         std::process::exit(1);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn raw_oracle_detects_removed_initial_bad_edges_and_changed_labels() {
+        let edges = [Transition::new(0, 11, 1), Transition::new(1, 12, 2)];
+        let fixture = Fixture {
+            n: 4,
+            initial: &[0, 3],
+            bad: &[2],
+            edges: &edges,
+        };
+        let witness = Witness {
+            states: vec![0, 1, 2],
+            actions: vec![11, 12],
+        };
+        assert!(reference_reaches_bad(&fixture));
+        assert!(reference_witness_valid(&fixture, &witness));
+        let no_initial = Fixture {
+            initial: &[3],
+            ..fixture
+        };
+        assert!(!reference_reaches_bad(&no_initial));
+        let no_bad = Fixture {
+            bad: &[],
+            ..fixture
+        };
+        assert!(!reference_reaches_bad(&no_bad));
+        for removed in 0..edges.len() {
+            let remaining: Vec<_> = edges
+                .iter()
+                .enumerate()
+                .filter_map(|(i, e)| (i != removed).then_some(*e))
+                .collect();
+            let broken = Fixture {
+                initial: &[0],
+                bad: &[2],
+                edges: &remaining,
+                ..fixture
+            };
+            assert!(!reference_reaches_bad(&broken));
+            assert!(!reference_witness_valid(&broken, &witness));
+        }
+        let changed = [edges[0], Transition::new(1, 99, 2)];
+        let relabeled = Fixture {
+            edges: &changed,
+            ..fixture
+        };
+        assert!(reference_reaches_bad(&relabeled));
+        assert!(!reference_witness_valid(&relabeled, &witness));
+
+        let cyclic_edges = [Transition::new(0, 1, 0), Transition::new(0, 2, 1)];
+        let cyclic = Fixture {
+            n: 2,
+            initial: &[0],
+            bad: &[1],
+            edges: &cyclic_edges,
+        };
+        let cyclic_witness = Witness {
+            states: vec![0, 0, 1],
+            actions: vec![1, 2],
+        };
+        assert!(reference_witness_valid(&cyclic, &cyclic_witness));
+        let mut long = Witness {
+            states: vec![0; MAX_STATES - 1],
+            actions: vec![1; MAX_STATES - 2],
+        };
+        long.states.push(1);
+        long.actions.push(2);
+        assert!(reference_witness_valid(&cyclic, &long));
+        long.states.insert(0, 0);
+        long.actions.insert(0, 1);
+        assert!(!reference_witness_valid(&cyclic, &long));
+        assert!(!reference_witness_valid(
+            &cyclic,
+            &Witness {
+                states: vec![0, 1],
+                actions: vec![]
+            }
+        ));
+        assert!(!reference_witness_valid(
+            &cyclic,
+            &Witness {
+                states: vec![0, 2, 1],
+                actions: vec![1, 2]
+            }
+        ));
+    }
+
+    #[test]
+    fn compare_raw_parallel_edges_and_noncanonical_set_order() {
+        let edges = [
+            Transition::new(0, 1, 1),
+            Transition::new(0, 2, 1),
+            Transition::new(0, 1, 1),
+        ];
+        let fixture = Fixture {
+            n: 4,
+            initial: &[3, 0],
+            bad: &[2, 1],
+            edges: &edges,
+        };
+        let mut totals = Totals::default();
+        compare(&fixture, "parallel", 0, &mut totals).unwrap();
+        assert_eq!(totals.replayed, 1);
     }
 }
