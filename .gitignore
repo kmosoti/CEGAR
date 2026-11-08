@@ -22,3 +22,22 @@ rustc-ice-*.txt
 #  and can be added to the global gitignore or merged into this file.  For a more nuclear
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
+
+# Local models, credentials and research outputs
+.env
+.env.*
+!.env.example
+*.gguf
+*.safetensors
+*.pt
+*.pth
+*.onnx
+models/
+checkpoints/
+secrets/
+credentials/
+local-data/
+private-evidence/
+__pycache__/
+.pytest_cache/
+*.pyc
