@@ -126,7 +126,7 @@ cargo run -q -p cegar-local-model --locked --offline --bin probe -- \
 
 CI does **not** run the probe: no hosted runner has this loopback service. CI
 compiles the adapter, runs its offline contract tests, and runs the domain
-reference check — [run 42522675527](https://github.com/kmosoti/CEGAR/actions/runs/42522675527)
-on `505d602de307d820baf3bc2248efc94c14cd7a78`, all gates green. The local run
+reference check — [run 42522760646](https://github.com/kmosoti/CEGAR/actions/runs/42522760646)
+on `e82325c11ad780a83cd892262e174879b1af7347`, all gates green. The local run
 above is the evidence that the real inference path works; the CI run is evidence
 that the offline contract holds. Neither substitutes for the other.

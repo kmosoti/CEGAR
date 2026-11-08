@@ -33,16 +33,17 @@ Baseline: integration tip `33424250f926a173396e8e95ee638f6be7c6cf94`
 consumes it.
 
 Local run identity: the Fedora working-copy tree that was published on
-`issue/7-domain-compiler`. CI identity for the final head of that branch (domain
-compiler, adapter and mutation tests) is [run 42522675527](https://github.com/kmosoti/CEGAR/actions/runs/42522675527)
-on `505d602de307d820baf3bc2248efc94c14cd7a78`, which passed every gate above —
+`issue/7-domain-compiler`. CI identity for that branch head (domain
+compiler, adapter, mutation tests and the first evidence revision) is
+[run 42522760646](https://github.com/kmosoti/CEGAR/actions/runs/42522760646) on
+`e82325c11ad780a83cd892262e174879b1af7347`, which passed every gate above —
 including the new *Independent domain reference check* step:
 `{"status":"passed","oracle":"rust_domain_reference_dfs","cases":103,"verified":31,"counterexamples":72,"skipped_limits":0,"seed":19227491642723889}`.
-The intermediate commit `e8c5988` also passed ([run 42522270328](https://github.com/kmosoti/CEGAR/actions/runs/42522270328))
-and `22974def` passed ([run 42522618744](https://github.com/kmosoti/CEGAR/actions/runs/42522618744));
-the branch head later replaced `22974def` with a commit that also contains the
-mutation tests, so those two runs are provenance for earlier heads, not for the
-current one. Local results are not CI, and CI is not Fedora model execution; the
+Earlier heads also passed: `e8c5988` ([run 42522270328](https://github.com/kmosoti/CEGAR/actions/runs/42522270328)),
+`22974def` ([run 42522618744](https://github.com/kmosoti/CEGAR/actions/runs/42522618744)) and
+`505d602d` ([run 42522675527](https://github.com/kmosoti/CEGAR/actions/runs/42522675527)); the
+last two were superseded by commits that also carry the mutation tests and the CI
+identity text, so those runs are provenance for earlier heads, not for this one. Local results are not CI, and CI is not Fedora model execution; the
 local-model adapter path is covered by [validation 0008](0008-fedora-local-model-probe.md).
 
 ### Gates executed
