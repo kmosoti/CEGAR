@@ -67,6 +67,7 @@ The core is Sans-I/O. External dependencies belong behind small explicit adapter
 | [Core README](crates/cegar-core/README.md) | Implemented library contract and limits |
 | [Architecture](docs/ARCHITECTURE.md) | Proposed full-service boundaries |
 | [Formal model](docs/FORMAL_MODEL.md) | Abstraction and verification obligations |
+| [Artifact domain semantics v0.1](docs/ARTIFACT_DOMAIN_SEMANTICS.md) | Proposed safety semantics and synthetic cases; not implemented |
 | [Contracts](docs/CONTRACTS.md) | Proposed service contracts, not implemented endpoints |
 | [Security](docs/SECURITY.md) | Threat model and authority boundaries |
 | [Research audit](docs/RESEARCH_AUDIT.md) | Source claims and unsupported shortcuts |

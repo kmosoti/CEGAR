@@ -13,6 +13,7 @@ Canonical design sources remain [the research audit](../docs/RESEARCH_AUDIT.md),
 ## Implementation and investigation tracking
 
 - [Issue #2: finite-state core](https://github.com/kmosoti/CEGAR/issues/2)
+- [Issue #5: proposed artifact domain semantics](https://github.com/kmosoti/CEGAR/issues/5)
 - [Draft PR #1: architecture](https://github.com/kmosoti/CEGAR/pull/1)
 - [Draft PR #3: bounded Rust implementation and tests](https://github.com/kmosoti/CEGAR/pull/3), stacked on the design branch
 - [Source-audited component boundaries](research/0001-component-boundaries.md)
@@ -29,6 +30,9 @@ Canonical design sources remain [the research audit](../docs/RESEARCH_AUDIT.md),
 - [Independent audit validation](evidence/0004-independent-audit-validation.md)
 - [Targeted fault-injection findings](research/0005-targeted-fault-injection.md)
 - [Fault-injection validation](evidence/0005-fault-injection-validation.md)
+- [Artifact semantics: trust and compiler boundaries](research/0006-artifact-semantics-boundaries.md)
+- [ADR 0007: proposed artifact domain semantics](decisions/0007-artifact-domain-semantics.md)
+- [Artifact semantics validation](evidence/0006-artifact-semantics-validation.md)
 
 The core is **built and tested in CI**, not deployed, G15-measured or production-qualified. Autonomous implementation decisions remain subject to human review. A positive checker result applies only to the supplied finite model, never execution authority.
 
