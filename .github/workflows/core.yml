@@ -27,7 +27,12 @@ jobs:
         run: |
           mkdir -p "$EVIDENCE"
           git rev-parse HEAD > "$EVIDENCE/tested-commit.txt"
-          sha256sum Cargo.toml Cargo.lock rust-toolchain.toml crates/cegar-core/Cargo.toml crates/cegar-core/src/lib.rs crates/cegar-core/tests/verification.rs xtask/Cargo.toml xtask/src/main.rs > "$EVIDENCE/source-sha256.txt"
+          sha256sum Cargo.toml Cargo.lock rust-toolchain.toml \
+            crates/cegar-core/Cargo.toml crates/cegar-core/src/lib.rs \
+            crates/cegar-core/tests/verification.rs \
+            crates/cegar-domain/Cargo.toml crates/cegar-domain/src/*.rs \
+            crates/cegar-domain/tests/domain.rs \
+            xtask/Cargo.toml xtask/src/*.rs > "$EVIDENCE/source-sha256.txt"
       - name: Install exact compiler
         id: toolchain
         shell: bash
@@ -73,6 +78,19 @@ jobs:
             exit 1
           fi
           cat "$EVIDENCE/xtask-verification.json"
+      - name: Independent domain reference check
+        if: ${{ !cancelled() && steps.toolchain.outcome == 'success' }}
+        shell: bash
+        run: |
+          set -o pipefail
+          # Compiler-versus-reference agreement over the seeded synthetic corpus.
+          if ! cargo run --quiet -p xtask --locked --offline -- domain \
+            > "$EVIDENCE/xtask-domain.json" \
+            2> "$EVIDENCE/xtask-domain-stderr.log"; then
+            cat "$EVIDENCE/xtask-domain-stderr.log" >&2
+            exit 1
+          fi
+          cat "$EVIDENCE/xtask-domain.json"
       - name: Preserve formatting remediation outside Git
         if: ${{ !cancelled() && steps.toolchain.outcome == 'success' }}
         run: |
@@ -82,6 +100,9 @@ jobs:
           cp crates/cegar-core/src/lib.rs "$EVIDENCE/formatted/lib.rs"
           cp crates/cegar-core/tests/verification.rs "$EVIDENCE/formatted/verification.rs"
           cp xtask/src/main.rs "$EVIDENCE/formatted/xtask-main.rs"
+          for source in crates/cegar-domain/src/*.rs; do
+            cp "$source" "$EVIDENCE/formatted/domain-$(basename "$source")"
+          done
       - name: Upload sanitized validation evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
