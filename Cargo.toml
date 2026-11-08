@@ -1,5 +1,5 @@
 [workspace]
-members = ["crates/cegar-core"]
+members = ["crates/cegar-core", "xtask"]
 resolver = "3"
 
 [workspace.package]

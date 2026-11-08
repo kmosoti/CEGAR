@@ -1,4 +1,6 @@
-# Bounded-core validation record
+# Bounded-core validation record (historical, Python-era)
+
+> **Historical evidence only.** The owner subsequently required a Rust-only development workflow. The Python driver and custom process protocol have been removed from the current branch. See [ADR 0004](../decisions/0004-rust-only-xtask-tooling.md) and [the new xtask validation record](0003-rust-xtask-validation.md). Keep the earlier results for provenance; do not treat them as tests of the replacement.
 
 - Date: 2026-11-07 US Central / 2026-11-08 UTC
 - Tracks [issue #2](https://github.com/kmosoti/CEGAR/issues/2) and [draft implementation PR #3](https://github.com/kmosoti/CEGAR/pull/3)

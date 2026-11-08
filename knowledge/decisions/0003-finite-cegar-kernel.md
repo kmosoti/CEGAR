@@ -1,5 +1,7 @@
 # ADR 0003: Dependency-free finite CEGAR kernel and explicit adapter limits
 
+> **Historical decision record:** item 6's Python process-oracle choice was explicitly rejected by the owner and superseded by [ADR 0004](0004-rust-only-xtask-tooling.md). Retain the original record to explain what was implemented and tested, not as current policy.
+
 - Date: 2026-11-07 US Central
 - Status: Implemented in a draft contribution; **human review pending**
 - Decision origin: automated engineering contribution requested by the repository owner

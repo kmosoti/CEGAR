@@ -27,8 +27,7 @@ jobs:
         run: |
           mkdir -p "$EVIDENCE"
           git rev-parse HEAD > "$EVIDENCE/tested-commit.txt"
-          python3 --version > "$EVIDENCE/python-version.txt"
-          sha256sum Cargo.toml Cargo.lock rust-toolchain.toml crates/cegar-core/Cargo.toml crates/cegar-core/src/lib.rs crates/cegar-core/tests/verification.rs crates/cegar-core/examples/oracle_driver.rs scripts/differential.py > "$EVIDENCE/source-sha256.txt"
+          sha256sum Cargo.toml Cargo.lock rust-toolchain.toml crates/cegar-core/Cargo.toml crates/cegar-core/src/lib.rs crates/cegar-core/tests/verification.rs xtask/Cargo.toml xtask/src/main.rs > "$EVIDENCE/source-sha256.txt"
       - name: Install exact compiler
         id: toolchain
         shell: bash
@@ -61,13 +60,12 @@ jobs:
         run: |
           set -o pipefail
           cargo test --workspace --release --locked --offline -- --nocapture 2>&1 | tee "$EVIDENCE/test-release.txt"
-      - name: Independent Python-to-Rust comparison
+      - name: Independent Rust xtask verification
         if: ${{ !cancelled() && steps.toolchain.outcome == 'success' }}
         shell: bash
         run: |
           set -o pipefail
-          cargo build --example oracle_driver --locked --offline 2>&1 | tee "$EVIDENCE/build-driver.txt"
-          python3 scripts/differential.py --driver target/debug/examples/oracle_driver 2>&1 | tee "$EVIDENCE/differential.txt"
+          cargo run -p xtask --locked --offline -- verify 2>&1 | tee "$EVIDENCE/xtask-verification.jsonl"
       - name: Preserve formatting remediation outside Git
         if: ${{ !cancelled() && steps.toolchain.outcome == 'success' }}
         run: |
@@ -76,7 +74,7 @@ jobs:
           mkdir -p "$EVIDENCE/formatted"
           cp crates/cegar-core/src/lib.rs "$EVIDENCE/formatted/lib.rs"
           cp crates/cegar-core/tests/verification.rs "$EVIDENCE/formatted/verification.rs"
-          cp crates/cegar-core/examples/oracle_driver.rs "$EVIDENCE/formatted/oracle_driver.rs"
+          cp xtask/src/main.rs "$EVIDENCE/formatted/xtask-main.rs"
       - name: Upload sanitized validation evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02

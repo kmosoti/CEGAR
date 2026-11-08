@@ -1,5 +1,7 @@
 # Finding 0002: A bounded Sans-I/O CEGAR kernel is testable without inference
 
+> **Historical execution context:** the Python-to-Rust process comparison documented below belonged to an earlier revision. The owner directed its replacement by [Rust xtask](0003-rust-reference-verification.md); historical CI evidence is retained.
+
 - Date: 2026-11-07 US Central
 - Origin: automated implementation and investigation; human review pending
 - Evidence: [validation record](../evidence/0002-bounded-core-validation.md), [PR #3](https://github.com/kmosoti/CEGAR/pull/3)

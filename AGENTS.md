@@ -10,6 +10,10 @@ Use **JJ with colocated Git** for local development; see [CONTRIBUTING.md](CONTR
 
 **Preferred architecture:** Rust-native core with precise external dependency adapters and Sans-I/O where it genuinely improves deterministic verification. Choose concrete functions and small ports over a general plugin framework. Consult [ADR 0002](knowledge/decisions/0002-bounded-sans-io-core.md) for the tradeoff and reversal criteria.
 
+## Rust-only development tooling
+
+The owner requires **Rust-native source and testing**. Use a dedicated Rust `xtask` crate for development orchestration; do not introduce Python scripts, Python subprocess test drivers, or another language for routine validation. Put independent reference oracles in Rust outside the trusted core. Historical non-Rust evidence is retained in knowledge records, not executed by CI. A genuine external dependency requires a specific adapter contract and explicit rationale.
+
 ## Mission
 
 Build an inspectable, resource-bounded verification service in Rust. Neural adapters may propose plans and extract claims but may never certify permissions, rewrite binding policy, or authorize execution. Prioritize reproducible evidence over feature count.

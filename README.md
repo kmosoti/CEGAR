@@ -12,7 +12,7 @@ CEGAR explores a local Rust service that turns proposed agent actions into expli
 
 The current bounds are 128 states and 512 transitions. Results apply only to the supplied finite model, whose completeness and real-world fidelity are not established by the checker. `execution_authorized()` is always false.
 
-[Validation evidence](knowledge/evidence/0002-bounded-core-validation.md) records the exact tested revision, compiler, failures and green CI run. Fifteen integration tests and one doc test pass in debug and release. The tests include 28,868 exhaustive small models; a separate Python oracle drives the Rust executable and independently replays returned unsafe traces. Test coverage is not a proof of every possible implementation behavior.
+[Previous validation evidence](knowledge/evidence/0002-bounded-core-validation.md) and [Rust-only xtask validation](knowledge/evidence/0003-rust-xtask-validation.md) records the exact tested revision, compiler, failures and green CI run. Fifteen integration tests and one doc test pass in debug and release. The tests include 28,868 exhaustive small models; a separate Rust xtask independently checks reachability and witnesses. Test coverage is not a proof of every possible implementation behavior.
 
 ## Run the validation
 
@@ -23,11 +23,10 @@ cargo fmt --all --check
 cargo clippy --workspace --all-targets --locked --offline -- -D warnings
 cargo test --workspace --locked --offline -- --nocapture
 cargo test --workspace --release --locked --offline -- --nocapture
-cargo build --example oracle_driver --locked --offline
-python3 scripts/differential.py --driver target/debug/examples/oracle_driver
+cargo run -p xtask --locked --offline -- verify
 ```
 
-The example driver is a bounded test protocol, not the proposed production JSON/HTTP API.
+The xtask is development-only; no production JSON/HTTP adapter has been implemented.
 
 ## Why this project exists
 
@@ -63,6 +62,7 @@ The core is Sans-I/O. External dependencies belong behind small explicit adapter
 | --- | --- |
 | [AGENTS.md](AGENTS.md) | Agent guardrails and scope |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | JJ workflow, issues and evidence |
+| [Rust xtask](xtask/README.md) | Rust-only development oracle and reproducibility |
 | [Knowledge index](knowledge/README.md) | Findings, evidence and autonomous decisions |
 | [Core README](crates/cegar-core/README.md) | Implemented library contract and limits |
 | [Architecture](docs/ARCHITECTURE.md) | Proposed full-service boundaries |

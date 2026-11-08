@@ -19,7 +19,10 @@ Canonical design sources remain [the research audit](../docs/RESEARCH_AUDIT.md),
 - [Finite-checker implementation findings](research/0002-finite-checker-findings.md)
 - [Built/tested evidence, exact CI runs and failed attempts](evidence/0002-bounded-core-validation.md)
 - [ADR 0002: pragmatic Sans-I/O preference](decisions/0002-bounded-sans-io-core.md)
-- [ADR 0003: autonomous finite-kernel decisions and alternatives](decisions/0003-finite-cegar-kernel.md)
+- [ADR 0003: historical finite-kernel decisions](decisions/0003-finite-cegar-kernel.md)
+- [ADR 0004: owner-directed Rust-only xtask validation](decisions/0004-rust-only-xtask-tooling.md)
+- [Rust-only oracle research and limitations](research/0003-rust-reference-verification.md)
+- [Rust xtask validation status](evidence/0003-rust-xtask-validation.md)
 
 The core is **built and tested in CI**, not deployed, G15-measured or production-qualified. Autonomous implementation decisions remain subject to human review. A positive checker result applies only to the supplied finite model, never execution authority.
 

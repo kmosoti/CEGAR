@@ -109,6 +109,10 @@ Every development PR should reference its tracking issue.
 
 Human review is required for trusted collection, authority paths, policy, soundness claims, schemas, model access, networking, or any future executor. Only advance integration history after the review and validations pass.
 
+## Rust-only development and test tooling
+
+Use `cargo` and the Rust `xtask` crate for verification, synthetic model generation and development tooling. Do not add Python scripts, an extra CLI/runtime, or a disposable subprocess transport solely to run tests. Keep the test oracle algorithmically independent of CEGAR internals even when both are Rust. See [ADR 0004](knowledge/decisions/0004-rust-only-xtask-tooling.md).
+
 ## Rust-native and Sans-I/O design preference
 
 **Prefer Rust-native code for service and reasoning logic.** Use a **Sans-I/O / functional-core, imperative-shell boundary** where it reduces the cost of reasoning, testing and simulation.

@@ -27,8 +27,7 @@ cargo fmt --all --check
 cargo clippy --workspace --all-targets --locked --offline -- -D warnings
 cargo test --workspace --locked --offline -- --nocapture
 cargo test --workspace --release --locked --offline -- --nocapture
-cargo build --example oracle_driver --locked --offline
-python3 scripts/differential.py --driver target/debug/examples/oracle_driver
+cargo run -p xtask --locked --offline -- verify
 ```
 
-Run from the repository root. The `oracle_driver` is a bounded, test-only whitespace transport, not the proposed JSON/HTTP API. Public JSON schema parity, trusted observations, workflow compilation, Z3 and model adapters remain unimplemented. Validation status is in `knowledge/evidence/0002-bounded-core-validation.md`; no test result is implied by the presence of these commands.
+Run from the repository root. The Rust-only xtask implements independent backward-reachability and witness checks. The previous example-only whitespace transport has been removed; production JSON/HTTP remains unimplemented. Public JSON schema parity, trusted observations, workflow compilation, Z3 and model adapters remain unimplemented. Historical validation is in `knowledge/evidence/0002-bounded-core-validation.md`; the Rust-only follow-up is `knowledge/evidence/0003-rust-xtask-validation.md`; no test result is implied by the presence of these commands.

@@ -4,7 +4,7 @@
 
 [Draft PR #3](https://github.com/kmosoti/CEGAR/pull/3), branch `feat/2-bounded-verifier`, contains the first dependency-free Rust finite-state checker for [issue #2](https://github.com/kmosoti/CEGAR/issues/2). It is stacked on `docs/cegar-design-agent-handoff` / draft PR #1. The owner's linked documentation branch is unchanged. A PR body reference is not claimed to establish a new branch Development association.
 
-The core now builds and passes Clippy, formatting, debug/release tests and the Python-to-Rust differential check. Read [the exact evidence](../knowledge/evidence/0002-bounded-core-validation.md), [findings](../knowledge/research/0002-finite-checker-findings.md) and [autonomous decisions](../knowledge/decisions/0003-finite-cegar-kernel.md). These are scoped CI results, not G15 measurements or proof of a real host's safety.
+The core now builds and passes Clippy, formatting, debug/release tests and the historical Python-to-Rust differential check (now superseded by Rust xtask). Read [the exact evidence](../knowledge/evidence/0002-bounded-core-validation.md), [findings](../knowledge/research/0002-finite-checker-findings.md) and [autonomous decisions](../knowledge/decisions/0003-finite-cegar-kernel.md). These are scoped CI results, not G15 measurements or proof of a real host's safety.
 
 ## Read order
 
@@ -16,9 +16,9 @@ The core now builds and passes Clippy, formatting, debug/release tests and the P
 
 ## What is implemented
 
-Validated dense-ID finite models; action-labeled quotient reachability; concrete frontier propagation; spurious-trace refinement; concrete witness replay; bounded work/refinement and cooperative cancellation; independent Rust transitive closure and Python process oracle. Tests use synthetic data only. No runtime dependencies are required.
+Validated dense-ID finite models; action-labeled quotient reachability; concrete frontier propagation; spurious-trace refinement; concrete witness replay; bounded work/refinement and cooperative cancellation; independent Rust transitive closure and a separate Rust xtask backward-reachability oracle. Tests use synthetic data only. No runtime dependencies are required.
 
-The initial model contract is a Rust API, not the proposed bit-width/explicit-ID JSON schema. The example driver is a test-only bounded whitespace protocol. Do not present it as the authenticated service.
+The initial model contract is a Rust API, not the proposed bit-width/explicit-ID JSON schema. The removed test-only process driver is not the production API. Rust xtask checks the core directly. Do not present it as the authenticated service.
 
 ## Next contribution: review before adding machinery
 
@@ -38,11 +38,14 @@ cargo fmt --all --check
 cargo clippy --workspace --all-targets --locked --offline -- -D warnings
 cargo test --workspace --locked --offline -- --nocapture
 cargo test --workspace --release --locked --offline -- --nocapture
-cargo build --example oracle_driver --locked --offline
-python3 scripts/differential.py --driver target/debug/examples/oracle_driver
+cargo run -p xtask --locked --offline -- verify
 ```
 
 Record exact source/compiler versions and output. Raw sanitized outputs belong in the issue's linked CI artifacts; durable interpretations go in `knowledge/evidence/`. Do not silently rewrite the pin to obtain green without documenting the decision.
+
+## Rust-only tooling requirement
+
+The owner explicitly requires Rust-native development; do not add Python code or Python CI glue. Use `xtask` for orchestration and an independently implemented Rust reference algorithm for differential checks. See [ADR 0004](../knowledge/decisions/0004-rust-only-xtask-tooling.md) and [validation 0003](../knowledge/evidence/0003-rust-xtask-validation.md). Historical Python-era evidence remains in validation 0002 solely as provenance.
 
 ## Subsequent milestones
 
