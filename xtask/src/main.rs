@@ -3,6 +3,9 @@
 //! The reference oracle uses a backwards least fixed point instead.
 #![forbid(unsafe_code)]
 
+mod domain_corpus;
+mod domain_oracle;
+
 use cegar_core::{
     Limits, MAX_STATES, MAX_TRANSITIONS, Model, Outcome, Transition, Witness, verify,
 };
@@ -232,10 +235,18 @@ fn invalid_models(totals: &mut Totals) -> Result<(), String> {
 
 fn run() -> Result<(), String> {
     let mut args = std::env::args().skip(1);
-    if args.next().as_deref() != Some("verify") || args.next().is_some() {
-        return Err("usage: cargo run -p xtask --locked --offline -- verify".into());
+    let command = args.next();
+    if args.next().is_some() {
+        return Err("usage: cargo run -p xtask --locked --offline -- <verify|domain>".into());
     }
+    match command.as_deref() {
+        Some("verify") => verify_core(),
+        Some("domain") => verify_domain(),
+        _ => Err("usage: cargo run -p xtask --locked --offline -- <verify|domain>".into()),
+    }
+}
 
+fn verify_core() -> Result<(), String> {
     let mut totals = Totals::default();
     exhaustive(&mut totals)?;
     seeded(&mut totals)?;
@@ -245,6 +256,94 @@ fn run() -> Result<(), String> {
     println!(
         "{{\"status\":\"passed\",\"oracle\":\"rust_backward_fixed_point\",\"exhaustive_models\":{},\"seeded_models\":{},\"seed\":{},\"witnesses_replayed\":{},\"invalid_models\":{}}}",
         totals.exhaustive, totals.seeded, SEED, totals.replayed, totals.rejected
+    );
+    Ok(())
+}
+
+const DOMAIN_SEED: u64 = 0x44_4F_4D_41_49_4E_31;
+const DOMAIN_CASES: usize = 96;
+
+/// Differential check of the experimental domain compiler against the
+/// independent reference interpreter, over fixtures and a seeded corpus.
+fn verify_domain() -> Result<(), String> {
+    use cegar_domain::{AnalysisOutcome, CompileLimits, analyze, fixtures};
+
+    let mut compared = 0usize;
+    let mut skipped = 0usize;
+    let mut verified = 0usize;
+    let mut refuted = 0usize;
+
+    let mut cases: Vec<(String, cegar_domain::Plan, cegar_domain::Context)> = vec![
+        ("fixture-safe-chain".to_owned(), fixtures::safe_chain()),
+        (
+            "fixture-subject-mismatch".to_owned(),
+            fixtures::subject_mismatch(),
+        ),
+        (
+            "fixture-ambiguous-stage-output".to_owned(),
+            fixtures::ambiguous_stage_output(),
+        ),
+        (
+            "fixture-suite-mismatch".to_owned(),
+            fixtures::declared_output_not_minimal(),
+        ),
+        (
+            "fixture-untrusted-issuer".to_owned(),
+            fixtures::untrusted_issuer(),
+        ),
+        (
+            "fixture-cross-principal".to_owned(),
+            fixtures::cross_principal_without_rule(),
+        ),
+        (
+            "fixture-two-unsafe-ready".to_owned(),
+            fixtures::two_unsafe_ready_attempts(),
+        ),
+    ]
+    .into_iter()
+    .map(|(name, (plan, context))| (name, plan, context))
+    .collect();
+
+    for case in domain_corpus::corpus(DOMAIN_SEED, DOMAIN_CASES) {
+        cases.push((case.name, case.plan, case.context));
+    }
+
+    for (name, plan, context) in &cases {
+        let analysis = analyze(plan, context, CompileLimits::default());
+        domain_oracle::compare(plan, context, &analysis)
+            .map_err(|error| format!("{name}: {error}"))?;
+        match analysis.outcome {
+            AnalysisOutcome::VerifiedWithinModel => {
+                compared += 1;
+                verified += 1;
+            }
+            AnalysisOutcome::ConcreteCounterexample { .. } => {
+                compared += 1;
+                refuted += 1;
+            }
+            AnalysisOutcome::Inconclusive(_) => {
+                // A declared bound was reached; the compiler refuses rather than
+                // truncating, so there is no verdict to compare.
+                skipped += 1;
+            }
+            other => {
+                return Err(format!(
+                    "{name}: corpus case was not comparable ({})",
+                    other.tag()
+                ));
+            }
+        }
+    }
+
+    if compared < cases.len() / 2 {
+        return Err(format!(
+            "only {compared} of {} cases were comparable; the corpus is not exercising the compiler",
+            cases.len()
+        ));
+    }
+
+    println!(
+        "{{\"status\":\"passed\",\"oracle\":\"rust_domain_reference_dfs\",\"cases\":{compared},\"verified\":{verified},\"counterexamples\":{refuted},\"skipped_limits\":{skipped},\"seed\":{DOMAIN_SEED}}}"
     );
     Ok(())
 }

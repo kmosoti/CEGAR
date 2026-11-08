@@ -1,0 +1,16 @@
+[package]
+name = "cegar-local-model"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+description = "Untrusted, bounded loopback adapter to a local non-generative model; never a source of evidence"
+
+[dependencies]
+cegar-domain = { path = "../cegar-domain" }
+
+[[bin]]
+name = "probe"
+path = "src/bin/probe.rs"

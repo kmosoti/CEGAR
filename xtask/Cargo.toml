@@ -10,3 +10,4 @@ description = "Rust-only verification tasks and independent finite-graph referen
 
 [dependencies]
 cegar-core = { path = "../crates/cegar-core" }
+cegar-domain = { path = "../crates/cegar-domain" }

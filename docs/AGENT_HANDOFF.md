@@ -20,6 +20,23 @@ Validated dense-ID finite models; action-labeled quotient reachability; concrete
 
 The initial model contract is a Rust API, not the proposed bit-width/explicit-ID JSON schema. The removed test-only process driver is not the production API. Rust xtask checks the core directly. Do not present it as the authenticated service.
 
+## Issue #7 experiment (in progress, separate from Issue #2 review)
+
+An experimental, non-core slice now exists for [issue #7](https://github.com/kmosoti/CEGAR/issues/7):
+`crates/cegar-domain` compiles synthetic `stage → registered test → publish`
+plans into a bounded first-violation monitor graph for `cegar-core`, and
+`cargo run -p xtask -- domain` checks it against an independently written
+reference interpreter over fixtures plus a seeded corpus. Read
+[ADR 0008](../knowledge/decisions/0008-experimental-domain-compiler.md),
+[research 0007](../knowledge/research/0007-domain-compiler-findings.md) and
+[validation 0007](../knowledge/evidence/0007-fedora-domain-compiler.md) and
+[validation 0008](../knowledge/evidence/0008-fedora-local-model-probe.md).
+`crates/cegar-local-model` is a bounded loopback adapter to the already-running
+local TinyBERT reranker; it emits untrusted route claims that select one of three
+pinned templates and never evidence, policy or authority. There is still no
+collector and no execution authority, and nothing here changes the Issue #2
+acceptance criteria or promotes anything to `main`.
+
 ## Next contribution: review before adding machinery
 
 - Independently inspect the abstraction constructor, concrete feasibility logic and strict refinement progress argument.

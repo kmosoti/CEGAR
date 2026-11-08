@@ -6,5 +6,7 @@ This directory contains reviewed manifests and interpretation, not captured logs
 
 - [Bounded-core validation](0002-bounded-core-validation.md): exact compiler, tested source/merge identities, passing commands, coverage, failed runs, artifact hashes and expiry. Tracks [issue #2](https://github.com/kmosoti/CEGAR/issues/2) and [PR #3](https://github.com/kmosoti/CEGAR/pull/3).
 - [Artifact-domain semantics validation](0006-artifact-semantics-validation.md): local unchanged-core regression gates and the boundary between a proposed design and future domain verification. Tracks [issue #5](https://github.com/kmosoti/CEGAR/issues/5).
+- [Fedora domain-compiler validation](0007-fedora-domain-compiler.md): measured Fedora workstation facts, the new pure `cegar-domain` crate, local gate results and the independent reference-agreement check. Tracks [issue #7](https://github.com/kmosoti/CEGAR/issues/7).
+- [Fedora local-model probe validation](0008-fedora-local-model-probe.md): the first real local-model invocation, its measured latency/memory, the model-versus-baseline divergence and the explicit non-claims. Tracks [issue #7](https://github.com/kmosoti/CEGAR/issues/7).
 
 A new manifest must include provenance, collection command/date, input/source identities, scope, uncertainty, interpretation, falsifiers and verified artifact links. Do not claim an upload happened without read-back confirmation. GitHub Actions artifacts expire; the committed test procedures are the reproduction path, not a promise that every raw artifact is retained forever.
