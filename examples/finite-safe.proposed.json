@@ -1,0 +1,27 @@
+{
+  "bit_width": 2,
+  "states": [
+    0,
+    1,
+    2,
+    3
+  ],
+  "initial": [
+    0
+  ],
+  "bad": [
+    3
+  ],
+  "transitions": [
+    {
+      "from": 0,
+      "to": 2,
+      "action": "inspect"
+    },
+    {
+      "from": 1,
+      "to": 3,
+      "action": "publish"
+    }
+  ]
+}

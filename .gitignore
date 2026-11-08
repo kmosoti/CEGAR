@@ -22,3 +22,45 @@ rustc-ice-*.txt
 #  and can be added to the global gitignore or merged into this file.  For a more nuclear
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
+
+# Local models, credentials and research outputs
+.env
+.env.*
+!.env.example
+*.gguf
+*.safetensors
+*.pt
+*.pth
+*.onnx
+models/
+checkpoints/
+secrets/
+credentials/
+local-data/
+private-evidence/
+__pycache__/
+.pytest_cache/
+*.pyc
+
+# JJ colocated local workspace
+.jj/
+
+# Transient evidence must be attached to issues or retained as CI artifacts
+# Keep durable specs and synthetic regression fixtures in Git instead.
+*.prof
+*.profraw
+*.profdata
+*.nsys-rep
+*.qdrep
+*.ncu-rep
+*.trace
+*.flamegraph
+*.log
+benchmark-results/
+local-artifacts/
+artifacts/
+knowledge/evidence/*.json
+knowledge/evidence/*.jsonl
+knowledge/evidence/*.csv
+knowledge/evidence/*.zip
+knowledge/evidence/*.tar.gz

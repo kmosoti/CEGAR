@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CEGAR proposed neural prediction (advisory only)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "kind",
+    "model_revision",
+    "runtime_revision",
+    "template_id",
+    "source_ref",
+    "value",
+    "authority"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "0.1-proposal"
+    },
+    "kind": {
+      "const": "prediction"
+    },
+    "model_revision": {
+      "type": "string",
+      "minLength": 1
+    },
+    "runtime_revision": {
+      "type": "string",
+      "minLength": 1
+    },
+    "template_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source_ref": {
+      "type": "string",
+      "minLength": 1
+    },
+    "value": {},
+    "confidence": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 1
+    },
+    "calibration_ref": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "span": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": false,
+      "required": [
+        "start",
+        "end",
+        "unit"
+      ],
+      "properties": {
+        "start": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "end": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unit": {
+          "enum": [
+            "unicode_scalar",
+            "utf8_byte"
+          ]
+        }
+      }
+    },
+    "authority": {
+      "const": "advisory_only"
+    }
+  }
+}

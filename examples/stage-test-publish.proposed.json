@@ -1,0 +1,62 @@
+{
+  "schema_version": "0.1-proposal",
+  "task_domain": "artifact-publish",
+  "snapshot_ref": "synthetic:snapshot:1",
+  "policy_ref": "synthetic:policy:1",
+  "tool_registry_ref": "synthetic:tools:1",
+  "artifacts": {
+    "base": {
+      "kind": "base",
+      "digest": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    "patch": {
+      "kind": "patch",
+      "digest": "1111111111111111111111111111111111111111111111111111111111111111"
+    },
+    "candidate": {
+      "kind": "candidate",
+      "digest": "2222222222222222222222222222222222222222222222222222222222222222"
+    },
+    "tests": {
+      "kind": "test_attestation",
+      "digest": "3333333333333333333333333333333333333333333333333333333333333333"
+    }
+  },
+  "nodes": [
+    {
+      "id": "stage_candidate",
+      "tool": "stage_patch",
+      "depends_on": [],
+      "inputs": {
+        "base": "base",
+        "patch": "patch"
+      },
+      "output": "candidate"
+    },
+    {
+      "id": "test_candidate",
+      "tool": "run_registered_tests",
+      "depends_on": [
+        "stage_candidate"
+      ],
+      "inputs": {
+        "artifact": "candidate",
+        "suite": "registered:required"
+      },
+      "output": "tests"
+    },
+    {
+      "id": "publish_candidate",
+      "tool": "publish",
+      "depends_on": [
+        "test_candidate"
+      ],
+      "inputs": {
+        "artifact": "candidate",
+        "attestation": "tests",
+        "destination": "synthetic:registry:1"
+      },
+      "output": "synthetic:published:1"
+    }
+  ]
+}

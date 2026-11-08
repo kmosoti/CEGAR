@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CEGAR proposed scoped verifier output; never execution authorization",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "status",
+    "scope",
+    "execution_authorized",
+    "checked_properties",
+    "assumptions",
+    "limitations"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "0.1-proposal"
+    },
+    "status": {
+      "enum": [
+        "verified_within_model",
+        "concrete_counterexample",
+        "needs_evidence",
+        "invalid_input",
+        "stale_snapshot",
+        "inconclusive",
+        "unavailable"
+      ]
+    },
+    "scope": {
+      "enum": [
+        "supplied_finite_model_only",
+        "trusted_snapshot_and_policy"
+      ]
+    },
+    "execution_authorized": {
+      "const": false
+    },
+    "plan_digest": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "snapshot_digest": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "policy_digest": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "tool_registry_digest": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "checked_properties": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "assumptions": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "horizon": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "result": {
+      "type": "object",
+      "description": "Versioned status-specific payload. Semantic checker must validate witness or proof scope.",
+      "additionalProperties": true
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  }
+}

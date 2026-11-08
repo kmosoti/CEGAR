@@ -1,0 +1,19 @@
+{
+  "schema_version": "0.1-proposal",
+  "status": "needs_evidence",
+  "scope": "trusted_snapshot_and_policy",
+  "execution_authorized": false,
+  "checked_properties": [
+    "artifact_identity",
+    "test_attestation_identity"
+  ],
+  "assumptions": [],
+  "limitations": [
+    "No trusted attestation exists in this synthetic example."
+  ],
+  "result": {
+    "missing": [
+      "trusted test attestation for proposed artifact"
+    ]
+  }
+}
