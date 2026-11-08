@@ -1,0 +1,14 @@
+# Initial dependency-free lock; CI validates consistency with --locked.
+# No registry dependencies are declared by this workspace.
+version = 4
+
+[[package]]
+name = "cegar-core"
+version = "0.1.0"
+
+[[package]]
+name = "xtask"
+version = "0.1.0"
+dependencies = [
+ "cegar-core",
+]

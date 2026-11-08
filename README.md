@@ -2,101 +2,91 @@
 
 **Counterexample-Guided Abstraction Refinement for evidence-grounded agent plans.**
 
-CEGAR is an experimental Rust-based local service for turning proposed agent actions into **explicit, bounded, inspectable verification problems**. Optional neural models may extract claims, classify intent, or propose candidate plans. Trusted observations, operator policy, and deterministic verification remain the authority for whether a modeled plan satisfies its specified constraints.
+CEGAR explores a local Rust service that turns proposed agent actions into explicit, bounded, inspectable verification problems. Optional neural components may propose plans or identify claims. Trusted collection, versioned policy and deterministic checking must remain separate from those predictions.
 
-> **Project status: design / research, not a running production service.** This branch establishes the architecture, contracts, security boundaries, evaluation methodology, and agent handoff. No neural adapter, trusted snapshot collector, production solver service, or executor is claimed to be implemented, compiled, or benchmarked.
+> **Implementation branch status:** the dependency-free [finite-state core](crates/cegar-core/README.md) is built and tested in GitHub Actions on a pinned Rust 1.100 beta. The planned HTTP service, trusted snapshot collector, artifact-workflow compiler, SMT/neural adapters and executor are **not implemented**. This is a draft research contribution, not a production service or G15 deployment.
+
+## What exists now
+
+`cegar-core` validates an immutable supplied finite model, builds an overapproximating quotient, checks concrete feasibility of abstract counterexamples, refines spurious traces and replays real witnesses. Work/refinement limits and cancellation produce explicit inconclusive outcomes. It uses no third-party crates, GPU, filesystem, network or hidden clock.
+
+The current bounds are 128 states and 512 transitions. Results apply only to the supplied finite model, whose completeness and real-world fidelity are not established by the checker. `execution_authorized()` is always false.
+
+[Historical validation evidence](knowledge/evidence/0002-bounded-core-validation.md) and [Rust-only xtask validation](knowledge/evidence/0003-rust-xtask-validation.md) record earlier CI runs, not validation of later changes. The tests include 28,868 exhaustive small models; a separate Rust xtask checks reachability and witnesses against raw generated inputs. [The independent audit](knowledge/research/0004-independent-soundness-audit.md) distinguishes arguments from tests and remaining uncertainties. Test coverage is not a proof of every possible implementation behavior.
+
+## Run the validation
+
+The committed toolchain is `beta-2026-11-07`, observed in CI as `rustc 1.100.0-beta.12`, edition 2024. It is not mislabeled as a stable 1.100 release. With Rustup available:
+
+```sh
+cargo fmt --all --check
+cargo clippy --workspace --all-targets --locked --offline -- -D warnings
+cargo test --workspace --locked --offline -- --nocapture
+cargo test --workspace --release --locked --offline -- --nocapture
+cargo run -p xtask --locked --offline -- verify
+```
+
+The xtask is development-only; no production JSON/HTTP adapter has been implemented.
 
 ## Why this project exists
 
-A model can produce valid JSON for a plan that is nevertheless unauthorized, stale, unsound, or based on invented facts. A symbolic solver can prove a property of an incorrect model with perfect consistency. CEGAR studies the boundary between probabilistic interpretation and verifiable evidence, then makes that boundary visible in its API and experiments.
+A grammar-valid tool plan can still be unauthorized, stale, or based on invented facts. A solver can correctly prove a property of an incorrect model. CEGAR studies these boundaries and makes scope and unresolved evidence visible.
 
-The motivating use case is a **bounded artifact workflow**:
+The first intended domain workflow is: stage an immutable artifact, run registered tests against its exact digest, then publish that same digest. The compiler and trusted evidence path for that workflow remain future work. V0 is intended to review plans, not execute them.
 
-1. Stage a candidate artifact.
-2. Test the *exact* candidate.
-3. Publish only an artifact whose identity matches the passed test attestation.
+**Models propose; trusted collectors observe; policies constrain; verifiers establish scoped results.** A future executor must independently enforce live authorization. A source span proves occurrence, not truth. Unknown or stale evidence must never quietly become permission.
 
-CEGAR v0 **reviews** such workflows. It does **not** execute them.
-
-## Core principle
-
-**Models propose; trusted collectors observe; policies constrain; verifiers establish scoped results; executors, if added later, independently enforce live authorization.**
-
-A neural prediction is not an authoritative fact. A source span is not proof that its statement is true. A solver result applies to its encoded assumptions and horizon, not necessarily to the real machine. Missing evidence produces an explicit unresolved outcome.
-
-## Architecture at a glance
+## Proposed service architecture
 
 ```text
 Authenticated private client
            |
-   CEGAR HTTP service (Rust)
+   Rust transport / lifecycle shell           [planned]
            |
-  +--------+---------+-------------------+
-  |                  |                   |
-Evidence / snapshot  |          Optional neural adapters
-collector             |          (predictions only)
-  |                  |
-  +--> Typed plan and policy IR
-                         |
-                Deterministic validation
-                         |
-                 Bounded CEGAR / SMT
-                         |
-           Scoped receipt or counterexample
-                         |
-                 NO EXECUTION IN v0
+   Trusted snapshot + typed plan compiler    [planned]
+           |           ^
+           |     Optional neural suggestions  [planned, untrusted]
+           v
+   Bounded finite CEGAR kernel                [implemented/tested]
+           |
+   Scoped receipt or concrete counterexample
+           |
+   NO EXECUTION AUTHORITY
 ```
 
-The core should be **sans-I/O**: pure data types, finite-state semantics, planning obligations, refinement decisions, and testable algorithms. Network access, persistence, GPU work, subprocess isolation, and collection are adapters outside the core.
+The core is Sans-I/O. External dependencies belong behind small explicit adapters, not a general plugin framework. Real transport deadlines, process RAM ceilings, trusted observation provenance and eventual runtime authorization remain outside this first library slice.
 
-## Documents
+## Design and research
 
 | Document | Purpose |
 | --- | --- |
-| [Knowledge index](knowledge/README.md) | Curated research, evidence references, decisions and linked issue #2 |
-| [AGENTS.md](AGENTS.md) | General instructions and guardrails for coding agents |
-| [CONTRIBUTING.md](CONTRIBUTING.md) | Public contribution and review expectations |
-| [Architecture](docs/ARCHITECTURE.md) | Components, boundaries, authority and lifecycle |
-| [Formal model](docs/FORMAL_MODEL.md) | Meaning of CEGAR, proof obligations and solver outcomes |
-| [Contracts](docs/CONTRACTS.md) | Proposed types, API, receipt and compatibility rules |
-| [Security](docs/SECURITY.md) | Threat model, secrets, network and eventual executor boundary |
-| [Research audit](docs/RESEARCH_AUDIT.md) | Verified capabilities versus unverified workshop claims |
-| [Deployment model](docs/DEPLOYMENT.md) | Resource-aware G15 candidate, with OS configuration deferred |
-| [Evaluation](docs/EVALUATION.md) | Benchmarks, correctness, evidence levels, and promotion gates |
-| [Roadmap](docs/ROADMAP.md) | Milestones and acceptance criteria |
-| [Agent handoff](docs/AGENT_HANDOFF.md) | First engineering slice and definition of done |
-| [Sources](docs/SOURCES.md) | Primary-source reading list |
+| [AGENTS.md](AGENTS.md) | Agent guardrails and scope |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | JJ workflow, issues and evidence |
+| [Rust xtask](xtask/README.md) | Rust-only development oracle and reproducibility |
+| [Knowledge index](knowledge/README.md) | Findings, evidence and autonomous decisions |
+| [Core README](crates/cegar-core/README.md) | Implemented library contract and limits |
+| [Architecture](docs/ARCHITECTURE.md) | Proposed full-service boundaries |
+| [Formal model](docs/FORMAL_MODEL.md) | Abstraction and verification obligations |
+| [Artifact domain semantics v0.1](docs/ARTIFACT_DOMAIN_SEMANTICS.md) | Proposed safety semantics and synthetic cases; not implemented |
+| [Contracts](docs/CONTRACTS.md) | Proposed service contracts, not implemented endpoints |
+| [Security](docs/SECURITY.md) | Threat model and authority boundaries |
+| [Research audit](docs/RESEARCH_AUDIT.md) | Source claims and unsupported shortcuts |
+| [Deployment](docs/DEPLOYMENT.md) | Candidate G15 environment; OS tuning deferred |
+| [Evaluation](docs/EVALUATION.md) | Quality and operational qualification |
+| [Roadmap](docs/ROADMAP.md) | Staged acceptance gates |
+| [Agent handoff](docs/AGENT_HANDOFF.md) | Current contribution and next review work |
+| [Sources](docs/SOURCES.md) | Primary literature and upstream implementations |
 
-Proposed machine-readable examples live under [schemas](schemas/) and [examples](examples/). These are **design inputs** until the compiler, verifier, and integration tests validate their semantics.
+Draft [schemas](schemas/) and [examples](examples/) are design artifacts. The library's dense state IDs do not silently implement those JSON contracts; a future adapter must validate and map them.
 
-## Initial scope
+## Hardware and public provenance
 
-- One closed-world, explicitly modeled artifact workflow.
-- Typed evidence with source identities and snapshot revisions.
-- A bounded safety check and explainable counterexample or inconclusive outcome.
-- A read-only HTTP review API with authenticated private access.
-- A testable reference model and differential/property tests.
-- Optional LiquidAI d1-2B integration **after** the non-neural verifier is useful.
+The initial deployment target is a Dell G15 with RTX 3050 Ti Laptop GPU, 4 GiB VRAM and roughly 7.1 GiB OS-visible RAM. No performance, model fit, driver readiness or thermal claim is established by CI. The library requires no GPU. OS/CUDA/service-manager choices remain deferred and outside the core.
 
-Out of scope: unconstrained web browsing, arbitrary shell execution, automatically repairing policies, general natural-language truth verification, unrestricted local model loading, and automatic tool execution.
+Record hypotheses, failed tests, counterexamples, source identities and negative findings. Keep raw transient logs in sanitized issue-linked CI artifacts, not Git. Never publish secrets, workplace data, private conversations or model weights. MIT covers this project's original work, not third-party artifacts automatically.
 
-## Target environment
+## Development tracking
 
-Development target: **Rust 1.100, edition 2024**. Actual compiler and dependency versions must be pinned by the first implementation PR, then evidenced by a successful build. Initial hardware research concerns a Dell G15 with RTX 3050 Ti Laptop GPU (4 GiB VRAM) and roughly 7.1 GiB OS-visible RAM. The operating system, CUDA/runtime packaging, and host deployment configuration are deliberately left open.
+[Issue #2](https://github.com/kmosoti/CEGAR/issues/2) tracks the first core milestone. [Draft PR #3](https://github.com/kmosoti/CEGAR/pull/3) is stacked on [draft design PR #1](https://github.com/kmosoti/CEGAR/pull/1). Human review is pending; no merge or issue closure is implied by passing CI.
 
-The service architecture should not assume a particular Linux distribution. Machine-specific configuration belongs in infrastructure-as-code, not in CEGAR's domain core.
-
-## Status vocabulary
-
-Use **Proposed**, **Source-audited**, **Built**, **Tested**, **Measured-on-G15**, and **Qualified** precisely. No file or benchmark number is upgraded by implication. See [Evaluation](docs/EVALUATION.md).
-
-## Public research and provenance
-
-Record hypotheses, contrary evidence, model/runtime revisions, reproducible inputs, failed tests, and architectural decisions. Avoid publishing private chat messages, workplace artifacts, credentials, proprietary code, access policies, or model weights. The repository's MIT license applies to its original code and documentation, not automatically to third-party checkpoints.
-
-## Start here
-
-**Implementation tracking:** [Issue #2](https://github.com/kmosoti/CEGAR/issues/2) and [draft design PR #1](https://github.com/kmosoti/CEGAR/pull/1). Contributions use **JJ with colocated Git** and an issue-linked PR workflow; see [CONTRIBUTING.md](CONTRIBUTING.md).
-
-Read [AGENTS.md](AGENTS.md), [Agent handoff](docs/AGENT_HANDOFF.md), and [Formal model](docs/FORMAL_MODEL.md). The first useful contribution is **not** an AI model integration: it is an independently testable, bounded, non-neural verification slice.
-
+Preferred local workflow is **JJ with colocated Git**. The automated contribution's restricted-environment GitHub API exception is recorded in [ADR 0003](knowledge/decisions/0003-finite-cegar-kernel.md). No main or shared-branch history was rewritten.

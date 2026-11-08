@@ -1,0 +1,6 @@
+# Dated pre-stable toolchain for the requested Rust 1.100 target.
+# CI must establish availability and report rustc -Vv; never imply it was tested.
+[toolchain]
+channel = "beta-2026-11-07"
+profile = "minimal"
+components = ["rustfmt", "clippy"]

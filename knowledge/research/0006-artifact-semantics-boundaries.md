@@ -1,0 +1,31 @@
+# Finding 0006: Artifact workflow semantics must precede compiler trust
+
+- Date: 2026-11-08 US Central
+- Scope: design investigation for [issue #5](https://github.com/kmosoti/CEGAR/issues/5); source baseline `3abfcdac81ff65349cea232af10e3aa8f1f0b0cd`.
+- Status: source-audited proposal, not an implemented or owner-approved artifact compiler, policy, observation collector or service.
+
+## Verified observations
+
+The existing finite verifier accepts caller-supplied dense state IDs, action-labeled edges, initial and bad sets, with structural caps of 128 states and 512 transitions. `Model::new` rejects invalid indices and empty initial sets, but does not know whether the caller omitted a real failure or whether a graph's facts are authoritative. `Report` is a public in-memory value, and `execution_authorized()` always returns false. The verified behavior is scoped to the supplied graph; no domain compiler or trusted collector is present. See [core](../../crates/cegar-core/src/lib.rs) and [audit 0004](0004-independent-soundness-audit.md).
+
+[Formal model](../../docs/FORMAL_MODEL.md) requires exact tested/published digest identity, policy and observation freshness, and complete permitted interleavings or an explicit restriction. [Contracts](../../docs/CONTRACTS.md) prohibit minting trusted observations by serialization and require an authorized collector; digest equality alone is insufficient. [Security](../../docs/SECURITY.md) separates the future collector, compiler/verifier, receipt and potential executor, and states that missing or stale data cannot become success. The [proposed plan schema](../../schemas/plan.proposed.schema.json) provides only generic artifact `kind`/`digest` and string references; it does not establish attestation subject, suite, provenance, status, freshness or authorization.
+
+## Deductions and proposed obligations
+
+1. A compiler must preserve all permitted modeled behavior, including invalid publish attempts and failure branches. Silently deleting an unsafe action or a failed test branch can turn a bad plan into a safe graph. The returned model must expose its exact closed scope and property, not assert that omitted reality is safe.
+2. Initial trusted evidence and modeled future events differ: a future test-success branch is a **conditional model event**, not an actual authenticated observation. Actual evidence requires the separately trusted collector/attestation boundary, and any future executor must recheck live authority and identity. A plan string, model prediction, digest-shaped value or schema `kind` cannot mint authority.
+3. Missing, conflicting, stale, unverifiable or contradictory evidence must not be interpreted as a successful precondition. A proposed outcome taxonomy should say when inputs are invalid, need evidence, represent an in-model counterexample, or are inconclusive; it must not hide uncertainty by dropping branches or approving a plan.
+4. Deterministic graph construction needs bounded inputs, a stable state/action ordering and explicit resource accounting; if a complete required graph exceeds limits, return a conservative non-success rather than truncate states, edges, failure cases or schedules. A deliberately restricted schedule must be disclosed, and any positive result remains only within that restriction.
+5. The domain requires versioned, scoped identities for artifacts, test subjects and suites, principals, policy, snapshots and tool contracts. A content digest identifies bytes under a stated hash assumption; it is not provenance, freshness or permission.
+
+## Hypotheses, alternatives and unanswered decisions
+
+A small typed stage/test/publish vocabulary and synthetic negative corpus may suffice for an initial research contract without a solver or service; this is not yet an implementation result. Alternatives include expanding the draft JSON schema first or treating test-pass claims as trusted based on their fields. Both are rejected as shortcuts: syntax cannot establish authority, and a future parser cannot replace a source-of-trust boundary. Semantic choices about outcome precedence, supported ordering/interleavings, attestation issuer trust, revocation/freshness, digest algorithms and permitted failure effects require explicit review rather than invented defaults. Existing schemas remain proposals; a future adapter needs its own compatibility and input-bound validation.
+
+## Independent design review
+
+A read-only independent reviewer challenged the first draft and identified missing/ambiguous treatment of nondeterministic stage outputs, hypothetical issuer trust, keyed state serialization, evidence-principal versus publisher scope, transitive failure blocking, known failed attestations, and post-failure scheduling. The draft was revised to retain all permitted output bindings, apply the same scoped policy-validity predicate to observed and hypothetical records, preserve node/slot associations, explicitly check principal/tenant/audience scope, and specify blocked closure and conservative outcome categories. A further review clarified first-violation monitor boundaries, scope checks even for equal principals, optional test-suite permission versus publication requirements, and legitimate terminal deadlocks. The reviewer reported no further material contradictions in the resulting proposal; this is a design review, not approval or evidence of an implemented compiler. The scoped examples and explanations remain synthetic, unexecuted proposals.
+
+## Falsifiers and evidence
+
+A proposed compiler is unsound if it returns an unqualified positive outcome after dropping an admitted failure/interleaving, promoting a forged or predicted claim to an observation, accepting stale/contradictory evidence, truncating a required graph, or equating tested A with published B. Conversely, an implementation that rejects every input is not a useful end-to-end evaluator. Synthetic cases should explicitly encode both safe and adversarial conditions, rather than reuse the compiler as its own oracle. CI for the current graph core does not validate these future-domain obligations; [run 42501958661](https://github.com/kmosoti/CEGAR/actions/runs/42501958661) is evidence only for the cited finite-model implementation. No new domain tests or compiler have been run in this investigation.

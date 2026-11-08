@@ -4,26 +4,40 @@ Curated, dated research findings and architectural decisions for CEGAR. This is 
 
 ## What belongs here
 
-- `research/`: verifiable claims, pinned upstream source revisions, assumptions, competing hypotheses, and explicit unanswered questions.
-- `evidence/`: durable metadata and interpretation for sanitized issue-attached logs/traces or retained CI artifacts. Raw evidence should reside with the tracking issue or run artifact, **not in Git**.
-- `decisions/`: ADRs for significant architecture, trust-boundary or implementation tradeoffs.
+- `research/`: verifiable claims, pinned upstream revisions, observations, hypotheses, alternatives and unresolved questions.
+- `evidence/`: durable metadata and interpretation for sanitized issue-linked CI artifacts or attachments. Raw evidence stays outside Git.
+- `decisions/`: ADRs for architecture, trust boundaries and implementation tradeoffs, with provenance and review status.
 
-Existing source documents remain canonical at [docs/RESEARCH_AUDIT.md](../docs/RESEARCH_AUDIT.md), [docs/SOURCES.md](../docs/SOURCES.md), [docs/FORMAL_MODEL.md](../docs/FORMAL_MODEL.md), and [docs/decisions/0001-documentation-first.md](../docs/decisions/0001-documentation-first.md). Avoid duplicating their full contents without need.
+Canonical design sources remain [the research audit](../docs/RESEARCH_AUDIT.md), [sources](../docs/SOURCES.md), [formal model](../docs/FORMAL_MODEL.md) and [ADR 0001](../docs/decisions/0001-documentation-first.md).
 
-## Current evidence / implementation tracking
+## Implementation and investigation tracking
 
-- [Issue #2: Rust finite-state verification core](https://github.com/kmosoti/CEGAR/issues/2)
-- [Draft PR #1: architecture and handoff](https://github.com/kmosoti/CEGAR/pull/1)
-- [CEGAR validated component boundaries](research/0001-component-boundaries.md)
-- [ADR 0002: bounded Sans-I/O core and external adapters](decisions/0002-bounded-sans-io-core.md)
+- [Issue #2: finite-state core](https://github.com/kmosoti/CEGAR/issues/2)
+- [Issue #5: proposed artifact domain semantics](https://github.com/kmosoti/CEGAR/issues/5)
+- [Draft PR #1: architecture](https://github.com/kmosoti/CEGAR/pull/1)
+- [Draft PR #3: bounded Rust implementation and tests](https://github.com/kmosoti/CEGAR/pull/3), stacked on the design branch
+- [Source-audited component boundaries](research/0001-component-boundaries.md)
+- [Finite-checker implementation findings](research/0002-finite-checker-findings.md)
+- [Built/tested evidence, exact CI runs and failed attempts](evidence/0002-bounded-core-validation.md)
+- [ADR 0002: pragmatic Sans-I/O preference](decisions/0002-bounded-sans-io-core.md)
+- [ADR 0003: historical finite-kernel decisions](decisions/0003-finite-cegar-kernel.md)
+- [ADR 0004: owner-directed Rust-only xtask validation](decisions/0004-rust-only-xtask-tooling.md)
+- [ADR 0005: raw-fixture reference checks](decisions/0005-raw-fixture-reference.md)
+- [ADR 0006: development-first integration and separate main promotion](decisions/0006-development-branch-integration.md)
+- [Rust-only oracle research and limitations](research/0003-rust-reference-verification.md)
+- [Rust xtask validation status](evidence/0003-rust-xtask-validation.md)
+- [Independent soundness audit and refinement-word distinction](research/0004-independent-soundness-audit.md)
+- [Independent audit validation](evidence/0004-independent-audit-validation.md)
+- [Targeted fault-injection findings](research/0005-targeted-fault-injection.md)
+- [Fault-injection validation](evidence/0005-fault-injection-validation.md)
+- [Artifact semantics: trust and compiler boundaries](research/0006-artifact-semantics-boundaries.md)
+- [ADR 0007: proposed artifact domain semantics](decisions/0007-artifact-domain-semantics.md)
+- [Artifact semantics validation](evidence/0006-artifact-semantics-validation.md)
+
+The core is **built and tested in CI**, not deployed, G15-measured or production-qualified. Autonomous implementation decisions remain subject to human review. A positive checker result applies only to the supplied finite model, never execution authority.
 
 ## Evidence discipline
 
-Prefer statements with:
-1. **Source/provenance:** authoritative URL/revision, observation command, and date.
-2. **Claim type:** documented fact, deduction, hypothesis, estimate, or experiment.
-3. **Scope:** hardware, model, workflow, and excluded conditions.
-4. **Falsifier:** a test or counterexample that would change the conclusion.
-5. **Artifact reference:** sanitized GitHub issue attachment or CI artifact if collected.
+Each note should identify source/revision, observation command/date, claim type, scope, excluded conditions, falsification tests, and a verified artifact reference when evidence exists. State failed attempts and limitations as well as successes. Record artifact expiry and do not mistake a temporary download link for permanent provenance.
 
-Never fabricate citations, test output, or stable links to not-yet-uploaded artifacts. If evidence cannot be safely published, document the gap without copying private data.
+No invented citations, test results, attachment success or claim that a model's interpretation is a trusted observation. If evidence cannot be safely published, describe the gap rather than copying sensitive data.

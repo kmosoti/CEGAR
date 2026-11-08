@@ -4,11 +4,28 @@ This file guides coding agents and automation working on CEGAR. It applies repos
 
 ## Repository workflow (required)
 
-Use **JJ with colocated Git** for local development; see [CONTRIBUTING.md](CONTRIBUTING.md). Before creating an issue, search existing issues and `knowledge/`. Link development PRs to their issue using `Refs #N` for partial work and `Closes #N` only when all acceptance conditions are met. Keep incomplete work in draft PRs. Inspect `jj status` and `jj diff`, describe finished changes with `jj describe -m "..."`, and move/push **only the feature bookmark**. Never advance `main` or force-push shared/infrastructure history without authorization.
+Use **JJ with colocated Git** for local development; see [CONTRIBUTING.md](CONTRIBUTING.md). Before creating an issue, search existing issues and `knowledge/`. Link development PRs to their issue using `Refs #N` for partial work and `Closes #N` only when all acceptance conditions are met. Keep incomplete work in draft PRs. Inspect `jj status` and `jj diff`, describe finished changes with `jj describe -m "..."`, and move/push **only your work bookmark** in ordinary development. Advancing the shared development bookmark requires owner-authorized, validated integration as specified below. Never advance `main` or force-push shared/infrastructure history without authorization.
 
 **Artifact policy:** durable schemas and synthetic regression fixtures stay in Git. Raw logs, profiles, temporary reports, local dumps and generated experiment outputs belong as **sanitized issue attachments or CI artifacts** with a short `knowledge/evidence/` manifest; never fabricate attachment links or claim tests were run when they were not.
 
 **Preferred architecture:** Rust-native core with precise external dependency adapters and Sans-I/O where it genuinely improves deterministic verification. Choose concrete functions and small ports over a general plugin framework. Consult [ADR 0002](knowledge/decisions/0002-bounded-sans-io-core.md) for the tradeoff and reversal criteria.
+
+## Development branch integration (required)
+
+**Integration is not promotion to `main`.** For the current Issue #2 milestone, the shared development integration branch is `feat/2-bounded-verifier`; its design ancestor is `docs/cegar-design-agent-handoff`. These are *current* branch identities, not a permanent naming policy. Read the tracking issue and active PRs before assuming the same integration branch for a later milestone. The owner decides when to establish a long-lived `develop` or promote anything to `main`.
+
+1. **Branch from the current development tip:** inspect `jj status`, `jj diff`, `jj bookmark list` and fetch current refs before creating an isolated change. Do not silently modify someone else's worktree or shared branch.
+2. **Review through a PR targeting development:** audit, test, and implementation PRs should normally target the *current shared development branch*, not `main`. Link the issue with `Refs #N`, keep incomplete work draft, and preserve the design/implementation PR stack until an owner-authorized promotion. Check actual PR base/head, changes, reviewers, and CI.
+3. **Integrate without rewriting history:** after review and applicable tests, use a **non-forced fast-forward** when the PR head descends from the current development tip; keep original commits and SHAs. For genuinely diverged branches, resolve via a **new merge commit** after inspecting conflicts and rerunning checks. Never rebase, squash, reset, or force-push published shared development history to manufacture a linear history. Do not create a redundant merge when the change is already an ancestor.
+4. **Protect against races:** inspect the current remote integration SHA immediately before mutation; require an expected-head check / lease and a fast-forward. If the shared tip changes, stop and reassess rather than overwriting it. Ordinary contributors advance their own work bookmarks; only an explicitly authorized integration action advances the shared development bookmark.
+5. **Verify the outcome:** re-read GitHub refs and PR states, confirm integrated commit ancestry, and check the resulting development-branch PR CI (not only the source PR's CI). Preserve failed results, exact revision IDs and artifact references in `knowledge/evidence/`. Mark a PR merged only when GitHub reports it; a linked issue is not automatically resolved.
+6. **Release is a separate decision:** never merge PR #1 or PR #3 into `main`, retarget their bases, close Issue #2, or move `main` merely because development checks passed. Promotion requires explicit owner authorization and its own review/validation. Preserve audit history and keep `main` unchanged during ongoing development.
+
+Example of the current stack: audit PR #4 was fast-forwarded (four original commits intact) into `feat/2-bounded-verifier`; GitHub marked #4 merged automatically, while design PR #1 and implementation PR #3 remain open and unmerged. See [ADR 0006](knowledge/decisions/0006-development-branch-integration.md). Do not repeat the integration when the commit is already present.
+
+## Rust-only development tooling
+
+The owner requires **Rust-native source and testing**. Use a dedicated Rust `xtask` crate for development orchestration; do not introduce Python scripts, Python subprocess test drivers, or another language for routine validation. Put independent reference oracles in Rust outside the trusted core. Historical non-Rust evidence is retained in knowledge records, not executed by CI. A genuine external dependency requires a specific adapter contract and explicit rationale.
 
 ## Mission
 

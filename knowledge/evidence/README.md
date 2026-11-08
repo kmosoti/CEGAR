@@ -1,16 +1,10 @@
 # Evidence references, not raw dumps
 
-Use this directory for short, reviewed evidence **manifests and interpretations** only. Attach raw/one-off investigation outputs to the relevant GitHub issue after sanitizing them, or reference retained CI artifacts with known expiry. Do not commit captured GPU dumps, model weights, local logs, benchmark CSVs, stack traces, tool transcripts, proprietary data or private messages.
+This directory contains reviewed manifests and interpretation, not captured logs, private host snapshots or model artifacts. Store sanitized raw output as issue-linked CI artifacts or attachments. Reusable synthetic regression fixtures belong in source control because they are test inputs, not transient output.
 
-A durable note should contain:
+## Records
 
-- Tracking issue and artifact URL (verified link, not placeholder).
-- Collection timestamp and exact tool/runtime version.
-- Reproducible command or procedure with secrets removed.
-- Data lineage, sampling limitations, scope and uncertainty.
-- Verification performed and what would falsify the conclusion.
-- Retention/expiry, if the artifact link is temporary.
+- [Bounded-core validation](0002-bounded-core-validation.md): exact compiler, tested source/merge identities, passing commands, coverage, failed runs, artifact hashes and expiry. Tracks [issue #2](https://github.com/kmosoti/CEGAR/issues/2) and [PR #3](https://github.com/kmosoti/CEGAR/pull/3).
+- [Artifact-domain semantics validation](0006-artifact-semantics-validation.md): local unchanged-core regression gates and the boundary between a proposed design and future domain verification. Tracks [issue #5](https://github.com/kmosoti/CEGAR/issues/5).
 
-No raw measurement artifact has been generated or attached for [issue #2](https://github.com/kmosoti/CEGAR/issues/2) yet. A historical statement that a test passed elsewhere is not an independently executed CEGAR test.
-
-**Do not claim attachment success until an actual issue attachment or CI artifact is verifiably accessible.**
+A new manifest must include provenance, collection command/date, input/source identities, scope, uncertainty, interpretation, falsifiers and verified artifact links. Do not claim an upload happened without read-back confirmation. GitHub Actions artifacts expire; the committed test procedures are the reproduction path, not a promise that every raw artifact is retained forever.

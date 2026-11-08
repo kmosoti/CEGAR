@@ -1,0 +1,11 @@
+[package]
+name = "cegar-core"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Bounded finite-state CEGAR with concrete witness replay; no execution authority"
+publish = false
+
+[dependencies]
