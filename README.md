@@ -53,6 +53,7 @@ The core should be **sans-I/O**: pure data types, finite-state semantics, planni
 
 | Document | Purpose |
 | --- | --- |
+| [Knowledge index](knowledge/README.md) | Curated research, evidence references, decisions and linked issue #2 |
 | [AGENTS.md](AGENTS.md) | General instructions and guardrails for coding agents |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Public contribution and review expectations |
 | [Architecture](docs/ARCHITECTURE.md) | Components, boundaries, authority and lifecycle |
@@ -94,6 +95,8 @@ Use **Proposed**, **Source-audited**, **Built**, **Tested**, **Measured-on-G15**
 Record hypotheses, contrary evidence, model/runtime revisions, reproducible inputs, failed tests, and architectural decisions. Avoid publishing private chat messages, workplace artifacts, credentials, proprietary code, access policies, or model weights. The repository's MIT license applies to its original code and documentation, not automatically to third-party checkpoints.
 
 ## Start here
+
+**Implementation tracking:** [Issue #2](https://github.com/kmosoti/CEGAR/issues/2) and [draft design PR #1](https://github.com/kmosoti/CEGAR/pull/1). Contributions use **JJ with colocated Git** and an issue-linked PR workflow; see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 Read [AGENTS.md](AGENTS.md), [Agent handoff](docs/AGENT_HANDOFF.md), and [Formal model](docs/FORMAL_MODEL.md). The first useful contribution is **not** an AI model integration: it is an independently testable, bounded, non-neural verification slice.
 

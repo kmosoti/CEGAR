@@ -41,3 +41,26 @@ private-evidence/
 __pycache__/
 .pytest_cache/
 *.pyc
+
+# JJ colocated local workspace
+.jj/
+
+# Transient evidence must be attached to issues or retained as CI artifacts
+# Keep durable specs and synthetic regression fixtures in Git instead.
+*.prof
+*.profraw
+*.profdata
+*.nsys-rep
+*.qdrep
+*.ncu-rep
+*.trace
+*.flamegraph
+*.log
+benchmark-results/
+local-artifacts/
+artifacts/
+knowledge/evidence/*.json
+knowledge/evidence/*.jsonl
+knowledge/evidence/*.csv
+knowledge/evidence/*.zip
+knowledge/evidence/*.tar.gz

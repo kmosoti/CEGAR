@@ -1,3 +1,7 @@
+## Tracking issue
+
+Refs #<!-- issue number; use Closes #N only when all issue acceptance criteria are complete -->
+
 ## Summary
 
 What changed and why? Which architectural/authority boundary is affected?
@@ -7,6 +11,10 @@ What changed and why? Which architectural/authority boundary is affected?
 What is deliberately out of scope? Which assumptions, snapshots, or model revisions matter?
 
 ## Evidence
+
+- Evidence/benchmark artifacts are sanitized and attached or linked on the tracking issue; versioned synthetic fixtures remain in Git.
+- Inspected local change and feature bookmark with JJ; did not move `main` or force-push shared history.
+
 
 - Commands executed and results (or explicit reason they were not run):
 - Tests / fixtures / benchmarks:

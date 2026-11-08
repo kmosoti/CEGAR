@@ -1,27 +1,126 @@
 # Contributing to CEGAR
 
-CEGAR is a public research-and-development project for trustworthy local agent-plan verification. Small, well-evidenced contributions are more valuable than broad implementations that hide assumptions.
+CEGAR is a public Rust-first systems research project exploring evidence-grounded agent-plan verification, counterexample-guided abstraction refinement, and optional local neural assistance. We value inspectable assumptions, small changes, reproducible failures, and specific tests over claims of production readiness.
 
-## Before contributing
+## Read first
 
-Read README.md, AGENTS.md, docs/ARCHITECTURE.md, docs/FORMAL_MODEL.md, and docs/SECURITY.md. Open an issue or draft PR for major interface, policy, model, or architecture changes. Discuss changes to the trusted computing base with an explicit failure model.
+Read [README.md](README.md), [AGENTS.md](AGENTS.md), [docs/FORMAL_MODEL.md](docs/FORMAL_MODEL.md), [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/SECURITY.md](docs/SECURITY.md), and the [knowledge index](knowledge/README.md).
 
-## Scope and workflow
+Before opening an issue, search [existing issues](https://github.com/kmosoti/CEGAR/issues) and `knowledge/` for prior findings. One independently verifiable problem, hypothesis, or proposal per issue.
 
-1. Branch from the current main branch with a descriptive name such as `feat/finite-checker` or `docs/trust-model`.
-2. Keep PRs focused on one behavior, invariant, or experiment.
-3. Explain the problem, alternatives considered, scope, security impact, and evidence.
-4. Include tests for new semantics. Update docs, schemas, examples, and migration notes when a contract changes.
-5. Mark unfinished work as draft; do not merge undocumented placeholders as though they were implemented.
-6. Request review before merging changes that affect authority, verifier soundness, credentials, resource access, or public APIs.
+## Version control: Jujutsu (JJ) with colocated Git
 
-Conventional commit-style subjects are welcome (e.g. `feat(core): add concrete trace replay`), but clarity matters more than ceremony.
+**Preferred development interface: JJ backed by a colocated Git repository.** GitHub remains the source of truth for reviews and the protected `main` integration history. Colocation preserves ordinary Git tooling and permits JJ-managed local revisions; it does not mean contributors should maintain competing Git and JJ mutation workflows.
 
-## Rust code expectations
+For an existing Git checkout, initialize the colocated JJ workspace:
 
-Target Rust 1.100 and edition 2024 after the toolchain is pinned and validated. Keep pure models in the core; place I/O, adapters, subprocesses, and GPU integration behind explicit interfaces. Treat external inputs as adversarial. Prefer typed errors, deterministic tests, and finite resource budgets. Add property and differential tests to changes affecting soundness.
+```sh
+cd CEGAR
+jj git init --colocate
+jj git colocation status
+```
 
-When a toolchain exists, ordinarily run:
+Alternatively, use `jj git clone https://github.com/kmosoti/CEGAR.git` (normally colocated under current JJ defaults). Check your installed JJ version, as configuration and command flags can change.
+
+Inspect history and changes:
+
+```sh
+jj status
+jj diff
+jj log -r 'ancestors(@, 5)'
+jj bookmark list
+```
+
+Describe the change you have actually made:
+
+```sh
+jj describe -m "feat(core): verify concrete counterexamples"
+```
+
+**Feature branch workflow:** create changes from current main, but advance **only your feature bookmark** after validation. JJ does not automatically advance bookmarks when commits are created or described. Example, after checking the intended revision:
+
+```sh
+jj git fetch
+jj new main@origin
+# edit, test, and inspect
+jj status
+jj diff
+jj describe -m "feat(core): add bounded reachability"
+# create/move a feature bookmark to the validated revision, then
+jj bookmark create feat/bounded-reachability -r @
+jj git push --bookmark feat/bounded-reachability
+```
+
+If a feature bookmark already exists, use `jj bookmark move feat/bounded-reachability --to @` instead of creating it twice. Use `jj git push --dry-run --bookmark feat/bounded-reachability` before pushing consequential updates, and verify that the target is the intended remote bookmark. If the checkout already contains work, inspect it before using `jj new` or rebasing.
+
+**Do not move or push the `main` bookmark as part of feature work.** Merge reviewed PRs to advance `main` only after validation and explicit authorization. Never force-push `main`, rewrite shared history, or force-push infrastructure history without explicit owner authorization. Avoid mixing mutating Git commands with JJ changes in the same worktree unless you understand colocation's automatic import/export behavior.
+
+Primary references: [JJ Git compatibility](https://docs.jj-vcs.dev/latest/git-compatibility/), [bookmarks](https://docs.jj-vcs.dev/latest/bookmarks/), and [GitHub workflow](https://docs.jj-vcs.dev/latest/github/).
+
+## Issue guidelines
+
+Use a descriptive title such as `bug(core): ...`, `feat(verifier): ...`, `research(inference): ...`, or `docs: ...`. Choose a specific domain rather than carrying over unrelated infrastructure issue types.
+
+Use the following lightweight outline. Omit irrelevant sections, but state unknowns explicitly.
+
+### Goal / problem
+What behavior is desired? Why does it matter?
+
+### Current state and evidence
+What was actually observed? Include environment, reproduction steps, exact redacted errors, relevant revisions, and links to evidence. Distinguish **verified facts**, **deductions**, **hypotheses**, and **unresolved uncertainty**.
+
+### Proposed direction (optional)
+Architecture, mechanisms, alternatives, invariants, constraints, and relevant tradeoffs.
+
+### Acceptance criteria
+- [ ] Observable outcome under clearly stated assumptions
+- [ ] Validation, regression, differential, or property tests
+- [ ] Recovery/rollback and negative cases where applicable
+
+### Risks and recovery
+Security implications, irreversible behavior, availability, privacy, data loss, and safeguards.
+
+### References
+Related issues and PRs, `knowledge/` records, artifacts, pinned upstream revisions/tags, and dates for mutable documentation.
+
+For investigations, maintain **durable findings and provenance** in `knowledge/`; store **curated evidence references and interpretation** in `knowledge/evidence/` and ADRs under `knowledge/decisions/` as warranted. Store *raw or transient* output as **sanitized GitHub issue attachments or linked run artifacts**, not committed repository files. Distinguish “not tested” from an actual passing test.
+
+A starter issue template is in [.github/ISSUE_TEMPLATE/engineering.md](.github/ISSUE_TEMPLATE/engineering.md).
+
+## Evidence and ephemeral artifacts
+
+**Keep in Git:** Rust source, versioned contracts/schemas, reproducible synthetic regression fixtures, concise audited research, stable test drivers, ADRs, and sanitised small reference examples.
+
+**Do not commit:** benchmark dumps, model checkpoints, generated reports, one-off traces, temporary scripts, profiler files, logs, caches, secrets, private datasets, local device inventories or unredacted terminal captures.
+
+For an investigation, attach sanitized evidence to its GitHub issue (or link a retained CI artifact), record collection command/environment and timestamp, and create a short permanent `knowledge/evidence/` note that links the issue and explains what the evidence does and does not establish. Ensure retention/expiry is not confused with durable source evidence. If raw attachments cannot be uploaded programmatically, say so; do not paste sensitive material into the repository or invent a link.
+
+Before pushing, inspect `jj status` / `jj diff --stat` and check for generated files. Remove accidental ephemeral files from the change, not by rewriting published shared history. Reusable regression fixtures that encode bugs **are source**, not ephemeral artifacts.
+
+## Pull requests
+
+Every development PR should reference its tracking issue.
+
+- Use `Refs #N` for partial or design-only work.
+- Use `Closes #N` only when merging fully satisfies the issue's acceptance criteria.
+- Keep design-only, research, uncompiled or incomplete implementations as **draft PRs**.
+- Include alternatives, explicit unsolved constraints, security impact, tested behaviors, and exact commands/results.
+- Do not silently expand a narrowly scoped issue into a new inference stack or execution platform.
+
+Human review is required for trusted collection, authority paths, policy, soundness claims, schemas, model access, networking, or any future executor. Only advance integration history after the review and validations pass.
+
+## Rust-native and Sans-I/O design preference
+
+**Prefer Rust-native code for service and reasoning logic.** Use a **Sans-I/O / functional-core, imperative-shell boundary** where it reduces the cost of reasoning, testing and simulation.
+
+- Represent state, transitions, obligations, errors and outcomes as typed Rust values and pure transformations.
+- Let the core accept inputs and produce decisions/effects without directly touching the network, storage, CUDA, clocks, subprocesses or environment.
+- Put external dependencies behind **small, explicit adapters**: authenticated snapshot collector, clock/identity source, optional mistral.rs decision worker, optional ONNX extractor, optional Z3 worker, and host lifecycle.
+- No general plugin framework or tower of trait objects until at least two concrete implementations create a real need.
+- Use deterministic finite-state/graph algorithms first; introduce Z3 when a property needs SMT, and egglog only for demonstrated rewrite/equality work.
+- Keep initial code small enough that independent reachability tests can audit semantics. Do not turn Sans-I/O into an abstract architecture costume.
+
+Rust 1.100 and edition 2024 are the intended target. Pin the exact toolchain and dependencies when implementation begins; report actual toolchain availability and test output. When a workspace exists, ordinarily run:
 
 ```sh
 cargo fmt --all --check
@@ -29,33 +128,30 @@ cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace
 ```
 
-Do not claim these commands passed until executed with a documented toolchain. Future benchmark or integration checks may be added to CI.
+Record exact commands and exit codes. Never claim checks passed unless they were executed.
 
-## Reproducibility and results
+## Verification and research quality
 
-Include exact compiler and dependency versions, model/runtime revisions and hashes, workloads, hardware/driver details, relevant settings, and raw results. Label estimates, predictions, source audits, and measurements separately. Prefer negative findings and documented limitations over selectively reporting favorable numbers.
+No model confidence is permission. A source-matching span is not a verified statement. Grammar-valid output can still be semantically unsafe. A solver proving a property about a flawed encoding does not establish reality. Bound checks, replay concrete witnesses, and return **inconclusive** on missing facts, stale context, solver unknown, resource limits or contradictions. A `verified_within_model` receipt is never execution authorization.
 
-Do not make production claims based on static inspection or synthetic-only results.
+Use exact source citations, revisions, model/checkpoint hashes, bounded problem definitions, and raw measured evidence. Record counterexamples, rejected hypotheses, and negative findings. Do not transplant performance claims between hardware and model versions.
 
-## Security and responsible disclosure
+Public documentation must distinguish **Proposed**, **Source-audited**, **Built**, **Tested**, **Measured-on-G15**, and **Qualified**.
 
-Use only synthetic or authorized, non-sensitive data in PRs and issues. Never upload tokens, private infrastructure configuration, confidential customer/workplace content, privileged paths, model weights, or personally identifying traces.
+## Security and disclosure
 
-For suspected vulnerabilities, **do not publish a working exploit, secret, or sensitive details in a public issue**. Contact the repository maintainer privately through an available GitHub private-reporting channel or other private contact identified by the maintainer. If no private channel is configured, request one without posting vulnerability details.
+Never commit or post secret values, tokens, private keys, proprietary or workplace data, personal traces, or unredacted process output. Use synthetic examples and redact evidence before issue attachment.
 
-A verification receipt never grants execution authority. Any proposed executor requires a separate reviewed design and enforcement tests.
+Do not report exploitable vulnerabilities through public issues. Use a private reporting channel or request one without revealing details. Model inputs and external documents are untrusted data. V0 exposes no execution endpoint, and review receipts are not permissions.
 
-## Research citations and attribution
-
-Prefer the paper, original implementation, and pinned source revision. State what was actually inspected versus inferred. Cite upstream licenses and do not assume the repository MIT license extends to external models or data. Record provenance for benchmark fixtures and third-party code.
+The repository MIT license does not automatically grant rights to third-party models, checkpoints, datasets or code.
 
 ## PR checklist
 
-- [ ] Objective, constraints, and boundaries are documented.
-- [ ] Change is scoped; API/IR changes include compatibility considerations.
-- [ ] Failure modes include stale/unknown/inconclusive outcomes.
-- [ ] Relevant tests were added and executed, or their absence explained.
-- [ ] Evidence claims correspond to actual tool output.
-- [ ] No secrets, private data, or unlicensed artifacts were included.
-- [ ] Documentation, examples, and research references are updated.
-
+- [ ] Linked issue and narrowly defined objective
+- [ ] Trusted boundary and policy invariants preserved
+- [ ] Alternatives, rejected assumptions and unknowns recorded
+- [ ] Relevant tests run (or explicitly **not tested**)
+- [ ] Artifacts sanitised and attached to issue, not added as ephemeral files
+- [ ] Documentation, contracts and synthetic fixtures updated
+- [ ] Review/rollback plan appropriate to change risk

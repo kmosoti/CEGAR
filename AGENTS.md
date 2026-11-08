@@ -2,6 +2,14 @@
 
 This file guides coding agents and automation working on CEGAR. It applies repository-wide unless a more specific nested AGENTS.md explicitly narrows its scope. Human contributors should also read CONTRIBUTING.md.
 
+## Repository workflow (required)
+
+Use **JJ with colocated Git** for local development; see [CONTRIBUTING.md](CONTRIBUTING.md). Before creating an issue, search existing issues and `knowledge/`. Link development PRs to their issue using `Refs #N` for partial work and `Closes #N` only when all acceptance conditions are met. Keep incomplete work in draft PRs. Inspect `jj status` and `jj diff`, describe finished changes with `jj describe -m "..."`, and move/push **only the feature bookmark**. Never advance `main` or force-push shared/infrastructure history without authorization.
+
+**Artifact policy:** durable schemas and synthetic regression fixtures stay in Git. Raw logs, profiles, temporary reports, local dumps and generated experiment outputs belong as **sanitized issue attachments or CI artifacts** with a short `knowledge/evidence/` manifest; never fabricate attachment links or claim tests were run when they were not.
+
+**Preferred architecture:** Rust-native core with precise external dependency adapters and Sans-I/O where it genuinely improves deterministic verification. Choose concrete functions and small ports over a general plugin framework. Consult [ADR 0002](knowledge/decisions/0002-bounded-sans-io-core.md) for the tradeoff and reversal criteria.
+
 ## Mission
 
 Build an inspectable, resource-bounded verification service in Rust. Neural adapters may propose plans and extract claims but may never certify permissions, rewrite binding policy, or authorize execution. Prioritize reproducible evidence over feature count.

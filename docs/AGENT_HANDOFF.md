@@ -1,5 +1,11 @@
 # Implementation agent handoff
 
+## Tracked implementation work
+
+**Tracking issue:** [#2, bounded Rust CEGAR verifier](https://github.com/kmosoti/CEGAR/issues/2). The architecture is in [draft PR #1](https://github.com/kmosoti/CEGAR/pull/1) on `docs/cegar-design-agent-handoff`. Read [CONTRIBUTING.md](../CONTRIBUTING.md) and [knowledge/](../knowledge/README.md) before coding. Prefer local JJ with colocated Git. A subsequent implementation PR should reference `Refs #2` until its acceptance gates are actually complete.
+
+Record investigation evidence in the issue rather than committing raw artifacts; maintain concise reference notes under `knowledge/evidence/`. Existing sample JSON schemas/fixtures are durable source artifacts and should remain versioned. There are currently no compiled Rust test results or G15 measurements for this implementation.
+
 ## Mission
 
 Implement the **first non-neural CEGAR slice** from the architecture and contracts in this repository. Do not begin with d1 integration, an agent UI, a chat harness, or a privileged executor.
