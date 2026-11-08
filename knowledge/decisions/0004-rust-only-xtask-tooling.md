@@ -1,7 +1,7 @@
 # ADR 0004: Rust-only development tooling and verification oracle
 
 - Date: 2026-11-07 US Central / 2026-11-08 UTC
-- Status: **Owner-directed change, implementation pending new CI qualification**
+- Status: **Owner-directed, implemented and CI-tested in the finite-model scope; human review pending**
 - Tracking: [issue #2](https://github.com/kmosoti/CEGAR/issues/2), [draft PR #3](https://github.com/kmosoti/CEGAR/pull/3)
 - Supersedes: the Python process-oracle tooling decision in [ADR 0003](0003-finite-cegar-kernel.md), **not** its historical test evidence
 
@@ -37,4 +37,4 @@ The new oracle shares Rust and the \`Model\` constructor with the implementation
 
 ## Validation and reversal
 
-Publish actual Cargo/Clippy/format/xtask outcomes in a new evidence record and Actions artifact before claiming this implementation is qualified. A disagreement or invalid witness is a failing gate. Revisit only if a clearly specified, non-Rust integration requirement cannot reasonably be tested through Rust code; obtain explicit owner approval before adding another language.
+Cargo/Clippy/format/xtask checks passed in [run 42439569614](https://github.com/kmosoti/CEGAR/actions/runs/42439569614), with scope and artifact provenance recorded in [validation 0003](../evidence/0003-rust-xtask-validation.md). This is **CI-tested**, not G15/production-qualified. A disagreement or invalid witness is a failing gate. Revisit only if a clearly specified, non-Rust integration requirement cannot reasonably be tested through Rust code; obtain explicit owner approval before adding another language.

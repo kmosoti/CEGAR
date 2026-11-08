@@ -2,7 +2,7 @@
 
 - Date: 2026-11-07 US Central / 2026-11-08 UTC
 - Origin: owner correction and automated design revision
-- Status: **Deduction and source inspection; new xtask execution pending CI**
+- Status: **Algorithmic deduction, implementation built and tested in CI (run 42439569614)**
 - Tracking: [issue #2](https://github.com/kmosoti/CEGAR/issues/2)
 
 ## Problem with the previous comparison
@@ -21,7 +21,7 @@ The exhaustive input family remains:
 sum(2^(n*n) * (2^n - 1) * 2^n, n = 1..3) = 28,868
 \`\`\`
 
-The additional 1,000 directed multiaction graph cases use an explicit fixed xorshift64* generator and seed \`0x4345474152\`. This does **not** reproduce Python's Mersenne Twister cases or their historical witness count, so results must be recorded independently. Eight invalid **Model constructor** fixtures replace the removed eight malformed custom-transport records; they are not the same checks.
+The additional 1,000 directed multiaction graph cases use an explicit fixed xorshift64* generator and seed \`0x4345474152\`. This does **not** reproduce Python's Mersenne Twister cases or their historical witness count, so results are recorded separately. The new suite validated 24,187 witnesses in its tested sample; that number is not comparable to the previous 24,188 without matching the generator. Eight invalid **Model constructor** fixtures replace the removed eight malformed custom-transport records; they are not the same checks.
 
 ## What this can and cannot establish
 

@@ -65,7 +65,14 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          cargo run -p xtask --locked --offline -- verify 2>&1 | tee "$EVIDENCE/xtask-verification.jsonl"
+          # Keep stdout as a single machine-readable JSON record; build diagnostics stay separate.
+          if ! cargo run --quiet -p xtask --locked --offline -- verify \
+            > "$EVIDENCE/xtask-verification.json" \
+            2> "$EVIDENCE/xtask-stderr.log"; then
+            cat "$EVIDENCE/xtask-stderr.log" >&2
+            exit 1
+          fi
+          cat "$EVIDENCE/xtask-verification.json"
       - name: Preserve formatting remediation outside Git
         if: ${{ !cancelled() && steps.toolchain.outcome == 'success' }}
         run: |

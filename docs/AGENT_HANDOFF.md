@@ -4,7 +4,7 @@
 
 [Draft PR #3](https://github.com/kmosoti/CEGAR/pull/3), branch `feat/2-bounded-verifier`, contains the first dependency-free Rust finite-state checker for [issue #2](https://github.com/kmosoti/CEGAR/issues/2). It is stacked on `docs/cegar-design-agent-handoff` / draft PR #1. The owner's linked documentation branch is unchanged. A PR body reference is not claimed to establish a new branch Development association.
 
-The core now builds and passes Clippy, formatting, debug/release tests and the historical Python-to-Rust differential check (now superseded by Rust xtask). Read [the exact evidence](../knowledge/evidence/0002-bounded-core-validation.md), [findings](../knowledge/research/0002-finite-checker-findings.md) and [autonomous decisions](../knowledge/decisions/0003-finite-cegar-kernel.md). These are scoped CI results, not G15 measurements or proof of a real host's safety.
+The core and the Rust-only xtask now build and pass Clippy, formatting, debug/release tests, and the independent Rust reference check in [CI run 42439569614](https://github.com/kmosoti/CEGAR/actions/runs/42439569614). The former Python-to-Rust test is historical, not an active tool. Read [Rust xtask validation evidence](../knowledge/evidence/0003-rust-xtask-validation.md) and [the historical original](../knowledge/evidence/0002-bounded-core-validation.md), [findings](../knowledge/research/0002-finite-checker-findings.md) and [autonomous decisions](../knowledge/decisions/0003-finite-cegar-kernel.md). These are scoped CI results, not G15 measurements or proof of a real host's safety.
 
 ## Read order
 
